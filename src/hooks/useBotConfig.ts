@@ -2,15 +2,11 @@ import { useState, useCallback } from "react";
 import {
   mockPromptSlots,
   mockEvalCriteria,
-  mockDataSources,
-  mockFewShotExamples,
   mockErrorLog,
 } from "@/data/mockBotConfig";
 import type {
   PromptSlot,
   EvalCriterion,
-  DataSourceConfig,
-  FewShotExample,
   ErrorLogEntry,
 } from "@/types/botConfig";
 
@@ -20,12 +16,8 @@ import type {
  */
 export function useBotConfig() {
   const [slots, setSlots] = useState<PromptSlot[]>(mockPromptSlots);
-  const [dataSources, setDataSources] =
-    useState<DataSourceConfig[]>(mockDataSources);
   const [evalCriteria, setEvalCriteria] =
     useState<EvalCriterion[]>(mockEvalCriteria);
-  const [fewShotExamples, setFewShotExamples] =
-    useState<FewShotExample[]>(mockFewShotExamples);
   const [errorLog] = useState<ErrorLogEntry[]>(mockErrorLog);
 
   const updatePrompt = useCallback((slotId: string, prompt: string) => {
@@ -45,7 +37,6 @@ export function useBotConfig() {
       prev.map((s) => {
         if (s.id !== slotId) return s;
 
-        // Auto-increment version
         const lastVersion = s.versions[s.versions.length - 1];
         const parts = lastVersion.version.replace("v", "").split(".");
         const newVersion = `v${parts[0]}.${parts[1]}.${Number(parts[2]) + 1}`;
@@ -60,7 +51,6 @@ export function useBotConfig() {
           description,
         };
 
-        // Mark previous versions as non-current
         const updatedVersions = s.versions.map((v) => ({
           ...v,
           label: v.label === "Current" ? "Archived" : v.label,
@@ -95,14 +85,6 @@ export function useBotConfig() {
     [],
   );
 
-  const toggleDataSource = useCallback((sourceId: string) => {
-    setDataSources((prev) =>
-      prev.map((ds) =>
-        ds.id === sourceId ? { ...ds, enabled: !ds.enabled } : ds,
-      ),
-    );
-  }, []);
-
   const addEvalCriterion = useCallback((name: string) => {
     setEvalCriteria((prev) => [
       ...prev,
@@ -116,22 +98,14 @@ export function useBotConfig() {
     ]);
   }, []);
 
-  const demoteExample = useCallback((exampleId: string) => {
-    setFewShotExamples((prev) => prev.filter((e) => e.id !== exampleId));
-  }, []);
-
   return {
     slots,
-    dataSources,
     evalCriteria,
-    fewShotExamples,
     errorLog,
     updatePrompt,
     switchModel,
     saveVersion,
     rollbackToVersion,
-    toggleDataSource,
     addEvalCriterion,
-    demoteExample,
   };
 }

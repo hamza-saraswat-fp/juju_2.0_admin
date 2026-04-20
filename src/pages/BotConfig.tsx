@@ -1,23 +1,18 @@
 import { useBotConfig } from "@/hooks/useBotConfig";
 import { PromptSlotCard } from "@/components/bot-config/PromptSlotCard";
 import { ConfigSidebar } from "@/components/bot-config/ConfigSidebar";
-import { FewShotPool } from "@/components/bot-config/FewShotPool";
 import { ErrorLog } from "@/components/bot-config/ErrorLog";
 
 export function BotConfig() {
   const {
     slots,
-    dataSources,
     evalCriteria,
-    fewShotExamples,
     errorLog,
     updatePrompt,
     switchModel,
     saveVersion,
     rollbackToVersion,
-    toggleDataSource,
     addEvalCriterion,
-    demoteExample,
   } = useBotConfig();
 
   return (
@@ -35,12 +30,10 @@ export function BotConfig() {
       </div>
 
       <div className="flex flex-col gap-6 lg:flex-row">
-        {/* Sidebar */}
+        {/* Sidebar — evals only */}
         <div className="shrink-0 lg:w-[250px]">
           <ConfigSidebar
-            dataSources={dataSources}
             evalCriteria={evalCriteria}
-            onToggleSource={toggleDataSource}
             onAddCriterion={addEvalCriterion}
           />
         </div>
@@ -60,12 +53,6 @@ export function BotConfig() {
               />
             ))}
           </div>
-
-          {/* Few-shot Pool */}
-          <FewShotPool
-            examples={fewShotExamples}
-            onDemote={demoteExample}
-          />
 
           {/* Error Log */}
           <ErrorLog entries={errorLog} slots={slots} />
