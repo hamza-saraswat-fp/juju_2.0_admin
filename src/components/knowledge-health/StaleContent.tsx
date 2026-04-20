@@ -25,9 +25,15 @@ export function StaleContent({ sources }: StaleContentProps) {
             <CardContent className="flex items-start gap-3 p-4">
               <div className="mt-0.5">
                 {s.source.sourceType === "knowledge_center" ? (
-                  <BookOpen className="h-5 w-5 text-blue-600" />
+                  <span className="inline-flex items-center gap-1 text-blue-600">
+                    <BookOpen className="h-4 w-4" />
+                    <span className="text-[9px] font-medium">KC</span>
+                  </span>
                 ) : (
-                  <FolderOpen className="h-5 w-5 text-amber-600" />
+                  <span className="inline-flex items-center gap-1 text-amber-600">
+                    <FolderOpen className="h-4 w-4" />
+                    <span className="text-[9px] font-medium">Conf</span>
+                  </span>
                 )}
               </div>
               <div className="flex-1">

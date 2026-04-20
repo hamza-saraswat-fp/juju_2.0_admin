@@ -186,16 +186,18 @@ export function SourceTable({ sources }: SourceTableProps) {
               </TableRow>
             ) : (
               paginated.map((s) => (
-                <TableRow key={s.source.id}>
+                <TableRow
+                  key={s.source.id}
+                  className="cursor-pointer"
+                  onClick={() =>
+                    window.open(s.source.url, "_blank", "noopener,noreferrer")
+                  }
+                >
                   <TableCell className="max-w-[250px] truncate font-medium">
                     {s.source.title}
                   </TableCell>
                   <TableCell>
-                    {s.source.sourceType === "knowledge_center" ? (
-                      <BookOpen className="h-4 w-4 text-blue-600" />
-                    ) : (
-                      <FolderOpen className="h-4 w-4 text-amber-600" />
-                    )}
+                    <SourceTypeLabel type={s.source.sourceType} />
                   </TableCell>
                   <TableCell className="font-mono text-sm">
                     {s.citations.toLocaleString()}
@@ -333,6 +335,23 @@ function StaleBadge({
     <Badge variant="destructive" className="text-[10px]">
       STALE: {days}D
     </Badge>
+  );
+}
+
+function SourceTypeLabel({ type }: { type: "knowledge_center" | "confluence" }) {
+  if (type === "knowledge_center") {
+    return (
+      <span className="inline-flex items-center gap-1 text-blue-600">
+        <BookOpen className="h-3.5 w-3.5" />
+        <span className="text-[10px] font-medium">KC</span>
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-amber-600">
+      <FolderOpen className="h-3.5 w-3.5" />
+      <span className="text-[10px] font-medium">Conf</span>
+    </span>
   );
 }
 

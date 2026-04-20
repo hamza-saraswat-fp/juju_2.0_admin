@@ -126,9 +126,15 @@ export function QuestionDetail({
                 className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors hover:bg-muted"
               >
                 {source.sourceType === "knowledge_center" ? (
-                  <BookOpen className="h-3.5 w-3.5 text-blue-600" />
+                  <span className="inline-flex items-center gap-0.5 text-blue-600">
+                    <BookOpen className="h-3.5 w-3.5" />
+                    <span className="text-[9px] font-semibold">KC</span>
+                  </span>
                 ) : (
-                  <FolderOpen className="h-3.5 w-3.5 text-amber-600" />
+                  <span className="inline-flex items-center gap-0.5 text-amber-600">
+                    <FolderOpen className="h-3.5 w-3.5" />
+                    <span className="text-[9px] font-semibold">Conf</span>
+                  </span>
                 )}
                 {source.title}
                 <ExternalLink className="h-3 w-3 text-muted-foreground" />

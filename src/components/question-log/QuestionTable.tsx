@@ -231,9 +231,19 @@ function SourcesCell({ sources }: { sources: Question["sources"] }) {
   const hasConfluence = sources.some((s) => s.sourceType === "confluence");
 
   return (
-    <span className="inline-flex items-center gap-1 text-muted-foreground">
-      {hasKC && <BookOpen className="h-3.5 w-3.5" />}
-      {hasConfluence && <FolderOpen className="h-3.5 w-3.5" />}
+    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+      {hasKC && (
+        <span className="inline-flex items-center gap-0.5 text-blue-600">
+          <BookOpen className="h-3.5 w-3.5" />
+          <span className="text-[9px] font-medium">KC</span>
+        </span>
+      )}
+      {hasConfluence && (
+        <span className="inline-flex items-center gap-0.5 text-amber-600">
+          <FolderOpen className="h-3.5 w-3.5" />
+          <span className="text-[9px] font-medium">Conf</span>
+        </span>
+      )}
       <span className="text-xs">
         {sources.length} source{sources.length !== 1 && "s"}
       </span>

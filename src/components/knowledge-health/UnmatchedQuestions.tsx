@@ -1,8 +1,10 @@
-import { FilePlus, UserPlus, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { FilePlus, UserPlus, X, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { UnmatchedQuestion } from "@/types/knowledge";
+import { formatCategory } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface UnmatchedQuestionsProps {
@@ -10,6 +12,7 @@ interface UnmatchedQuestionsProps {
 }
 
 export function UnmatchedQuestions({ questions }: UnmatchedQuestionsProps) {
+  const navigate = useNavigate();
   const shown = questions.slice(0, 5);
 
   return (
@@ -24,9 +27,21 @@ export function UnmatchedQuestions({ questions }: UnmatchedQuestionsProps) {
         <CardContent className="divide-y p-0">
           {shown.map((q) => (
             <div key={q.id} className="px-4 py-3">
-              <p className="text-sm font-medium leading-snug">
-                &ldquo;{q.questionText}&rdquo;
-              </p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm font-medium leading-snug">
+                  &ldquo;{q.questionText}&rdquo;
+                </p>
+                {/* Navigate to Question Log filtered to this category */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 shrink-0 px-1.5 text-muted-foreground hover:text-primary-blue"
+                  title={`View ${formatCategory(q.category)} questions`}
+                  onClick={() => navigate("/questions")}
+                >
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
               <div className="mt-2 flex items-center justify-between">
                 <Badge variant="outline" className="text-[10px]">
                   Hits: {q.hits}
