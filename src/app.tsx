@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppShell } from "@/components/layout/app-shell";
 import { QuestionLog } from "@/pages/QuestionLog";
 import { QuestionDetailPage } from "@/pages/QuestionDetailPage";
+import { KnowledgeHealth } from "@/pages/KnowledgeHealth";
 
 export default function App() {
   return (
@@ -11,14 +12,7 @@ export default function App() {
           <Route index element={<Navigate to="/questions" replace />} />
           <Route path="questions" element={<QuestionLog />} />
           <Route path="questions/:id" element={<QuestionDetailPage />} />
-          <Route
-            path="knowledge"
-            element={
-              <div className="text-muted-foreground">
-                Knowledge Health — coming soon
-              </div>
-            }
-          />
+          <Route path="knowledge" element={<KnowledgeHealth />} />
           <Route
             path="config"
             element={
