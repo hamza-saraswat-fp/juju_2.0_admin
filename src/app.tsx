@@ -3,6 +3,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { QuestionLog } from "@/pages/QuestionLog";
 import { QuestionDetailPage } from "@/pages/QuestionDetailPage";
 import { KnowledgeHealth } from "@/pages/KnowledgeHealth";
+import { BotConfig } from "@/pages/BotConfig";
 
 export default function App() {
   return (
@@ -13,14 +14,7 @@ export default function App() {
           <Route path="questions" element={<QuestionLog />} />
           <Route path="questions/:id" element={<QuestionDetailPage />} />
           <Route path="knowledge" element={<KnowledgeHealth />} />
-          <Route
-            path="config"
-            element={
-              <div className="text-muted-foreground">
-                Bot Config — coming soon
-              </div>
-            }
-          />
+          <Route path="config" element={<BotConfig />} />
         </Route>
       </Routes>
     </BrowserRouter>
