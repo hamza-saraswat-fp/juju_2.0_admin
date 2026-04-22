@@ -4,7 +4,7 @@ import type {
   CoverageGap,
   UnmatchedQuestion,
 } from "@/types/knowledge";
-import { Category } from "@/types/question";
+import type { Category } from "@/types/question";
 
 // ── Helpers ─────────────────────────────────────────────────
 
@@ -91,7 +91,7 @@ export const mockSourceStats: SourceStats[] = sources.map((source) => {
 export const mockCoverageGaps: CoverageGap[] = [
   {
     id: "cg-01",
-    category: Category.FINANCE,
+    category: "payments" as Category,
     description:
       "Voided invoice behavior in QuickBooks sync is undocumented. Multiple agents confused.",
     unansweredRate: 40,
@@ -100,7 +100,7 @@ export const mockCoverageGaps: CoverageGap[] = [
   },
   {
     id: "cg-02",
-    category: Category.PRODUCT,
+    category: "general" as Category,
     description:
       "Engage line vs. user pricing differences are unclear in knowledge base.",
     unansweredRate: 33,
@@ -109,7 +109,7 @@ export const mockCoverageGaps: CoverageGap[] = [
   },
   {
     id: "cg-03",
-    category: Category.OTHER,
+    category: "general" as Category,
     description:
       "Dashboard sharing and visibility permissions have no documentation.",
     unansweredRate: 28,
@@ -118,7 +118,7 @@ export const mockCoverageGaps: CoverageGap[] = [
   },
   {
     id: "cg-04",
-    category: Category.PRODUCT,
+    category: "general" as Category,
     description:
       "Credit card processing over the phone — no clear step-by-step guide exists.",
     unansweredRate: 22,
@@ -136,53 +136,53 @@ export const mockUnmatchedQuestions: UnmatchedQuestion[] = [
     questionText:
       "How to process a credit card payment over the phone and send a receipt?",
     hits: 14,
-    category: Category.FINANCE,
+    category: "payments" as Category,
   },
   {
     id: "uq-02",
     questionText:
       "What's the difference between an additional line vs. additional user in Engage?",
     hits: 11,
-    category: Category.PRODUCT,
+    category: "general" as Category,
   },
   {
     id: "uq-03",
     questionText:
       "Best way to add 'asset worked on' to a customer invoice?",
     hits: 9,
-    category: Category.PRODUCT,
+    category: "general" as Category,
   },
   {
     id: "uq-04",
     questionText: "How can you share visibility on dashboards?",
     hits: 8,
-    category: Category.OTHER,
+    category: "general" as Category,
   },
   {
     id: "uq-05",
     questionText:
       "If you void an invoice, what happens in QuickBooks?",
     hits: 7,
-    category: Category.FINANCE,
+    category: "payments" as Category,
   },
   {
     id: "uq-06",
     questionText:
       "Is there a limit to the number of texts customers can send daily for Engage?",
     hits: 6,
-    category: Category.PRODUCT,
+    category: "general" as Category,
   },
   {
     id: "uq-07",
     questionText:
       "Does the customer get GPS tracking when a tech sends 'headed your way'?",
     hits: 5,
-    category: Category.PRODUCT,
+    category: "general" as Category,
   },
   {
     id: "uq-08",
     questionText: "Do archived estimates show up in reporting?",
     hits: 4,
-    category: Category.FINANCE,
+    category: "payments" as Category,
   },
 ];

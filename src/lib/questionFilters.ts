@@ -84,8 +84,8 @@ export function filterQuestions(
         return false;
     }
 
-    // Unanswered filter
-    if (filters.onlyUnanswered && q.isAnswered) return false;
+    // "Unanswered" = parent has a not_helpful child vote (needsReview)
+    if (filters.onlyUnanswered && !q.needsReview) return false;
 
     return true;
   });

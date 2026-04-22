@@ -9,8 +9,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Category, CURRENT_ADMIN } from "@/types/question";
-import type { Question, ThumbsVote } from "@/types/question";
+import { CATEGORIES, CURRENT_ADMIN } from "@/types/question";
+import type { Category, Question, ThumbsVote } from "@/types/question";
 import {
   cn,
   relativeTime,
@@ -171,7 +171,7 @@ export function QuestionDetail({
             <option value="">
               AI Default ({formatCategory(question.aiCategory)})
             </option>
-            {Object.values(Category).map((cat) => (
+            {CATEGORIES.map((cat) => (
               <option key={cat} value={cat}>
                 {formatCategory(cat)}
               </option>

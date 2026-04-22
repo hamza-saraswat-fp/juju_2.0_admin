@@ -1,13 +1,19 @@
-// Category enum — placeholder values, real Lumis list TBD (easy swap)
-export enum Category {
-  BENEFITS = "BENEFITS",
-  IT_OPS = "IT_OPS",
-  FINANCE = "FINANCE",
-  HR = "HR",
-  PRODUCT = "PRODUCT",
-  SALES_PROCESS = "SALES_PROCESS",
-  OTHER = "OTHER",
-}
+// 10 categories, mirrored from the fp-evan/fieldpulse-support-agent autoresponder.
+// Also enforced at the DB layer by a CHECK constraint on juju_feedback.category.
+export const CATEGORIES = [
+  "invoicing",
+  "scheduling",
+  "payments",
+  "mobile-app",
+  "integrations",
+  "user-management",
+  "booking-portal",
+  "inventory",
+  "reporting",
+  "general",
+] as const;
+
+export type Category = (typeof CATEGORIES)[number];
 
 export type SourceType = "confluence" | "knowledge_center";
 
@@ -38,15 +44,17 @@ export interface Question {
   };
   questionText: string;
   threadContext: string | null; // Optional Slack thread context
-  answerText: string | null; // null = unanswered
+  answerText: string | null;
   sources: Source[];
-  aiCategory: Category; // AI-assigned
+  aiCategory: Category; // AI-assigned (from juju_feedback.category)
   manualCategoryOverride: Category | null; // Admin override
-  confidence: number; // 0-100
-  latencyMs: number; // Response time in ms
+  confidence: number; // 0-100 (derived from answer_confidence * 100)
+  latencyMs: number;
   thumbsVotes: ThumbsVote[];
   slackThreadUrl: string;
-  isAnswered: boolean;
+  // True when the parent row has at least one child vote = 'not_helpful'.
+  // Surfaces as the "Unanswered" tab / badge in the UI.
+  needsReview: boolean;
 }
 
 // Derived stats (computed by useQuestions)

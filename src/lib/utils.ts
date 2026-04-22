@@ -45,11 +45,13 @@ export function formatMs(ms: number): string {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
-/** Format category enum value for display: SALES_PROCESS → "Sales Process" */
+/** Display label for the 10 autoresponder categories.
+ *  'mobile-app' → 'Mobile App', 'user-management' → 'User Management', etc. */
 export function formatCategory(cat: string): string {
+  if (!cat) return "";
   return cat
-    .split("_")
-    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 }
 

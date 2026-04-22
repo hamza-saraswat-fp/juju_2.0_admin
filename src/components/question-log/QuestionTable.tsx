@@ -93,12 +93,12 @@ export function QuestionTable({
                 {/* Question text */}
                 <TableCell className="max-w-sm">
                   <p className="truncate font-medium">{q.questionText}</p>
-                  {!q.isAnswered && (
+                  {q.needsReview && (
                     <Badge
                       variant="outline"
                       className="mt-1 border-amber-300 bg-amber-50 text-amber-700"
                     >
-                      Unanswered
+                      Needs Review
                     </Badge>
                   )}
                 </TableCell>

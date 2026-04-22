@@ -17,8 +17,9 @@ import { QuestionDrawer } from "@/components/question-log/QuestionDrawer";
 const PER_PAGE = 20;
 
 export function QuestionLog() {
-  const { questions, stats, overrideCategory } = useQuestions();
-  const { vote, getVotes } = useThumbsVote();
+  const { questions, stats, overrideCategory, isLoading, error, refetch } =
+    useQuestions();
+  const { vote, getVotes } = useThumbsVote({ onMutate: refetch });
 
   // Filter state
   const [filters, setFilters] = useState<QuestionFilters>(DEFAULT_FILTERS);
@@ -97,12 +98,7 @@ export function QuestionLog() {
   const handleDrawerVote = useCallback(
     (value: "up" | "down") => {
       if (selectedQuestion) {
-        vote(
-          selectedQuestion.id,
-          CURRENT_ADMIN.id,
-          CURRENT_ADMIN.name,
-          value,
-        );
+        vote(selectedQuestion, CURRENT_ADMIN.id, CURRENT_ADMIN.name, value);
       }
     },
     [selectedQuestion, vote],
@@ -128,6 +124,12 @@ export function QuestionLog() {
 
       <StatCards stats={stats} />
 
+      {error && (
+        <div className="mb-6 rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-700">
+          Failed to load questions: {error}
+        </div>
+      )}
+
       <FilterBar
         filters={filters}
         searchQuery={searchQuery}
@@ -143,7 +145,7 @@ export function QuestionLog() {
 
       <QuestionTable
         questions={paginated}
-        isLoading={false}
+        isLoading={isLoading}
         onSelectQuestion={(q) => setSelectedQuestionId(q.id)}
         onResetFilters={handleResetFilters}
         totalFiltered={filtered.length}

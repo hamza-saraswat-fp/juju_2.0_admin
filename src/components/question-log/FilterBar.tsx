@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Category } from "@/types/question";
+import { CATEGORIES } from "@/types/question";
 import type { ConfidenceTier, FeedbackState } from "@/types/question";
 import type { QuestionFilters, TimeRange } from "@/lib/questionFilters";
 import { cn, formatCategory } from "@/lib/utils";
@@ -55,7 +55,7 @@ export function FilterBar({
           >
             All
           </Pill>
-          {Object.values(Category).map((cat) => (
+          {CATEGORIES.map((cat) => (
             <Pill
               key={cat}
               active={filters.category === cat}

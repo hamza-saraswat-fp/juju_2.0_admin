@@ -1,7 +1,7 @@
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import type { QuestionStats } from "@/types/question";
-import { cn } from "@/lib/utils";
+import { cn, formatCategory } from "@/lib/utils";
 
 interface StatCardsProps {
   stats: QuestionStats;
@@ -133,9 +133,3 @@ function StatCard({
   );
 }
 
-function formatCategory(cat: string): string {
-  return cat
-    .split("_")
-    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
-    .join(" ");
-}

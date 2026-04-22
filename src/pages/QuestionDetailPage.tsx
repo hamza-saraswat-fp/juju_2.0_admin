@@ -7,10 +7,26 @@ import { QuestionDetail } from "@/components/question-log/QuestionDetail";
 
 export function QuestionDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { getById, overrideCategory } = useQuestions();
-  const { vote, getVotes } = useThumbsVote();
+  const { getById, overrideCategory, isLoading, error, refetch } =
+    useQuestions();
+  const { vote, getVotes } = useThumbsVote({ onMutate: refetch });
 
   const question = id ? getById(id) : null;
+
+  if (isLoading) {
+    return (
+      <div className="py-12 text-center text-muted-foreground">Loading…</div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-12 text-center">
+        <h2 className="text-xl font-semibold">Failed to load</h2>
+        <p className="mt-2 text-muted-foreground">{error}</p>
+      </div>
+    );
+  }
 
   if (!question) {
     return (
@@ -46,7 +62,7 @@ export function QuestionDetailPage() {
           question={question}
           adminVotes={adminVotes}
           onVote={(value) =>
-            vote(question.id, CURRENT_ADMIN.id, CURRENT_ADMIN.name, value)
+            vote(question, CURRENT_ADMIN.id, CURRENT_ADMIN.name, value)
           }
           onOverrideCategory={(cat) => overrideCategory(question.id, cat)}
         />
