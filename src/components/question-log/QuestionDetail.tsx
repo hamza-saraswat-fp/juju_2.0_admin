@@ -11,14 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { CATEGORIES, CURRENT_ADMIN } from "@/types/question";
 import type { Category, Question, ThumbsVote } from "@/types/question";
-import {
-  cn,
-  relativeTime,
-  formatMs,
-  confidenceTier,
-  confidenceColor,
-  formatCategory,
-} from "@/lib/utils";
+import { cn, relativeTime, formatMs, formatCategory } from "@/lib/utils";
 
 // ── Props ───────────────────────────────────────────────────
 
@@ -44,7 +37,6 @@ export function QuestionDetail({
 
   const effectiveCategory =
     question.manualCategoryOverride ?? question.aiCategory;
-  const tier = confidenceTier(question.confidence);
 
   return (
     <div className="space-y-6">
@@ -182,13 +174,10 @@ export function QuestionDetail({
 
       <Separator />
 
-      {/* 6. Confidence + latency */}
+      {/* 6. Metrics — latency (confidence hidden until calibrated) */}
       <div>
         <SectionLabel>Metrics</SectionLabel>
         <div className="mt-2 flex items-center gap-4">
-          <Badge variant="secondary" className={cn("font-mono", confidenceColor(tier))}>
-            {question.confidence}% · {tier.charAt(0).toUpperCase() + tier.slice(1)}
-          </Badge>
           <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
             <Clock className="h-3.5 w-3.5" />
             {formatMs(question.latencyMs)}

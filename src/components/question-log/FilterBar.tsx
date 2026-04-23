@@ -3,7 +3,7 @@ import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES } from "@/types/question";
-import type { ConfidenceTier, FeedbackState } from "@/types/question";
+import type { FeedbackState } from "@/types/question";
 import type { QuestionFilters, TimeRange } from "@/lib/questionFilters";
 import { cn, formatCategory } from "@/lib/utils";
 
@@ -62,28 +62,6 @@ export function FilterBar({
               onClick={() => onFilterChange("category", cat)}
             >
               {formatCategory(cat)}
-            </Pill>
-          ))}
-        </FilterGroup>
-
-        <Divider />
-
-        {/* Confidence */}
-        <FilterGroup label="Confidence">
-          {(["ALL", "high", "medium", "low"] as const).map((tier) => (
-            <Pill
-              key={tier}
-              active={filters.confidenceTier === tier}
-              onClick={() =>
-                onFilterChange(
-                  "confidenceTier",
-                  tier as ConfidenceTier | "ALL",
-                )
-              }
-            >
-              {tier === "ALL"
-                ? "All"
-                : tier.charAt(0).toUpperCase() + tier.slice(1)}
             </Pill>
           ))}
         </FilterGroup>

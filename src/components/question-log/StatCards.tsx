@@ -3,13 +3,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { QuestionStats } from "@/types/question";
 import { cn, formatCategory } from "@/lib/utils";
 
+// Note: the `lowConfidenceCount` field on QuestionStats is no longer rendered.
+// Confidence was hidden from the UI until we have calibrated scoring — the
+// bot still writes answer_confidence so the data keeps flowing for later.
+
 interface StatCardsProps {
   stats: QuestionStats;
 }
 
 export function StatCards({ stats }: StatCardsProps) {
   return (
-    <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-5">
+    <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
       {/* Questions Today */}
       <StatCard
         label="Questions Today"
@@ -49,23 +53,6 @@ export function StatCards({ stats }: StatCardsProps) {
         value={formatCategory(stats.topCategory.category)}
         subtitle={`${stats.topCategory.count} questions`}
       />
-
-      {/* Low Confidence — accent card with navy bg */}
-      <Card className="border-0 bg-primary-navy text-white">
-        <CardContent className="p-6">
-          <p className="mb-1 text-[0.6875rem] font-semibold uppercase tracking-widest text-blue-300">
-            Low Confidence
-          </p>
-          <p
-            className={cn(
-              "font-mono text-3xl font-semibold",
-              stats.lowConfidenceCount > 0 ? "text-red-300" : "text-white",
-            )}
-          >
-            {stats.lowConfidenceCount}
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 }

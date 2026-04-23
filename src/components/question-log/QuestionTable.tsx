@@ -19,9 +19,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Question } from "@/types/question";
 import {
-  cn,
-  confidenceTier,
-  confidenceColor,
   relativeTime,
   deriveFeedbackState,
   formatCategory,
@@ -66,7 +63,6 @@ export function QuestionTable({
             <TableRow>
               <TableHead className="w-[100px]">Feedback</TableHead>
               <TableHead>Question</TableHead>
-              <TableHead className="w-[120px]">Confidence</TableHead>
               <TableHead className="w-[130px]">Category</TableHead>
               <TableHead className="hidden w-[120px] md:table-cell">
                 Sources
@@ -101,11 +97,6 @@ export function QuestionTable({
                       Needs Review
                     </Badge>
                   )}
-                </TableCell>
-
-                {/* Confidence */}
-                <TableCell>
-                  <ConfidenceBadge score={q.confidence} />
                 </TableCell>
 
                 {/* Category */}
@@ -199,16 +190,6 @@ function FeedbackCell({ votes }: { votes: Question["thumbsVotes"] }) {
   );
 }
 
-function ConfidenceBadge({ score }: { score: number }) {
-  const tier = confidenceTier(score);
-  const colorClasses = confidenceColor(tier);
-  return (
-    <Badge variant="secondary" className={cn("font-mono", colorClasses)}>
-      {score}% · {tier.charAt(0).toUpperCase() + tier.slice(1)}
-    </Badge>
-  );
-}
-
 function CategoryBadge({ question }: { question: Question }) {
   const effective = question.manualCategoryOverride ?? question.aiCategory;
   const label = formatCategory(effective);
@@ -261,7 +242,6 @@ function TableSkeleton() {
           <TableRow>
             <TableHead className="w-[100px]">Feedback</TableHead>
             <TableHead>Question</TableHead>
-            <TableHead className="w-[120px]">Confidence</TableHead>
             <TableHead className="w-[130px]">Category</TableHead>
             <TableHead className="hidden w-[120px] md:table-cell">
               Sources
@@ -280,9 +260,6 @@ function TableSkeleton() {
               <TableCell>
                 <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
                 <div className="mt-2 h-3 w-1/2 animate-pulse rounded bg-muted" />
-              </TableCell>
-              <TableCell>
-                <div className="h-6 w-16 animate-pulse rounded bg-muted" />
               </TableCell>
               <TableCell>
                 <div className="h-6 w-20 animate-pulse rounded bg-muted" />

@@ -1,11 +1,10 @@
 import type {
   Question,
-  ConfidenceTier,
   FeedbackState,
   SourceType,
   Category,
 } from "@/types/question";
-import { confidenceTier, deriveFeedbackState } from "./utils";
+import { deriveFeedbackState } from "./utils";
 
 // ── Filter types ────────────────────────────────────────────
 
@@ -13,7 +12,6 @@ export type TimeRange = "24h" | "7d" | "30d" | "all";
 
 export interface QuestionFilters {
   category: Category | "ALL";
-  confidenceTier: ConfidenceTier | "ALL";
   timeRange: TimeRange;
   feedbackState: FeedbackState | "ALL";
   sourceType: SourceType | "ALL";
@@ -22,7 +20,6 @@ export interface QuestionFilters {
 
 export const DEFAULT_FILTERS: QuestionFilters = {
   category: "ALL",
-  confidenceTier: "ALL",
   timeRange: "24h",
   feedbackState: "ALL",
   sourceType: "ALL",
@@ -60,11 +57,6 @@ export function filterQuestions(
     if (filters.category !== "ALL") {
       const effective = q.manualCategoryOverride ?? q.aiCategory;
       if (effective !== filters.category) return false;
-    }
-
-    // Confidence tier filter
-    if (filters.confidenceTier !== "ALL") {
-      if (confidenceTier(q.confidence) !== filters.confidenceTier) return false;
     }
 
     // Time range filter
