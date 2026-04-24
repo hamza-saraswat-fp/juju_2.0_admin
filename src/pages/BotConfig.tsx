@@ -1,11 +1,16 @@
+import { useEffect } from "react";
+import { toast } from "sonner";
 import { useBotConfig } from "@/hooks/useBotConfig";
 import { PromptSlotCard } from "@/components/bot-config/PromptSlotCard";
 import { ConfigSidebar } from "@/components/bot-config/ConfigSidebar";
 import { ErrorLog } from "@/components/bot-config/ErrorLog";
+import { Card } from "@/components/ui/card";
 
 export function BotConfig() {
   const {
     slots,
+    isLoading,
+    error,
     evalCriteria,
     errorLog,
     updatePrompt,
@@ -14,6 +19,10 @@ export function BotConfig() {
     rollbackToVersion,
     addEvalCriterion,
   } = useBotConfig();
+
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
 
   return (
     <div>
@@ -42,16 +51,20 @@ export function BotConfig() {
         <div className="flex-1 space-y-8">
           {/* Prompt Slot Cards */}
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-            {slots.map((slot) => (
-              <PromptSlotCard
-                key={slot.id}
-                slot={slot}
-                onUpdatePrompt={updatePrompt}
-                onSwitchModel={switchModel}
-                onSaveVersion={saveVersion}
-                onRollback={rollbackToVersion}
-              />
-            ))}
+            {isLoading
+              ? Array.from({ length: 4 }).map((_, i) => (
+                  <Card key={i} className="h-[360px] animate-pulse bg-muted/40" />
+                ))
+              : slots.map((slot) => (
+                  <PromptSlotCard
+                    key={slot.id}
+                    slot={slot}
+                    onUpdatePrompt={updatePrompt}
+                    onSwitchModel={switchModel}
+                    onSaveVersion={saveVersion}
+                    onRollback={rollbackToVersion}
+                  />
+                ))}
           </div>
 
           {/* Error Log */}

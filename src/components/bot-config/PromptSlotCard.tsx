@@ -14,8 +14,8 @@ interface PromptSlotCardProps {
   slot: PromptSlot;
   onUpdatePrompt: (slotId: string, prompt: string) => void;
   onSwitchModel: (slotId: string, model: string) => void;
-  onSaveVersion: (slotId: string, description: string) => void;
-  onRollback: (slotId: string, versionId: string) => void;
+  onSaveVersion: (slotId: string, description: string) => Promise<void> | void;
+  onRollback: (slotId: string, versionId: string) => Promise<void> | void;
 }
 
 export function PromptSlotCard({
@@ -41,12 +41,18 @@ export function PromptSlotCard({
     base: "bg-gray-100 text-gray-700 border-gray-300",
   }[slot.environment];
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!saveDescription.trim()) return;
-    onSaveVersion(slot.id, saveDescription.trim());
-    setSaveDescription("");
-    setSaveMode(false);
-    toast.success(`Version saved for ${slot.name}`);
+    try {
+      await onSaveVersion(slot.id, saveDescription.trim());
+      setSaveDescription("");
+      setSaveMode(false);
+      toast.success(`Version saved for ${slot.name}`);
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : `Failed to save ${slot.name}`,
+      );
+    }
   };
 
   return (
@@ -193,9 +199,17 @@ export function PromptSlotCard({
                       variant="outline"
                       size="sm"
                       className="h-6 gap-1 px-2 text-[10px]"
-                      onClick={() => {
-                        onRollback(slot.id, v.id);
-                        toast.success(`Rolled back to ${v.version}`);
+                      onClick={async () => {
+                        try {
+                          await onRollback(slot.id, v.id);
+                          toast.success(`Rolled back to ${v.version}`);
+                        } catch (e) {
+                          toast.error(
+                            e instanceof Error
+                              ? e.message
+                              : `Failed to roll back ${slot.name}`,
+                          );
+                        }
                       }}
                     >
                       <RotateCcw className="h-3 w-3" />
