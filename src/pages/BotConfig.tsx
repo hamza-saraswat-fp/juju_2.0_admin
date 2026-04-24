@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useBotConfig } from "@/hooks/useBotConfig";
 import { PromptSlotCard } from "@/components/bot-config/PromptSlotCard";
+import { PromptSlotDrawer } from "@/components/bot-config/PromptSlotDrawer";
 import { ConfigSidebar } from "@/components/bot-config/ConfigSidebar";
 import { ErrorLog } from "@/components/bot-config/ErrorLog";
 import { Card } from "@/components/ui/card";
@@ -20,6 +21,11 @@ export function BotConfig() {
     addEvalCriterion,
   } = useBotConfig();
 
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const selectedSlot = selectedSlotId
+    ? (slots.find((s) => s.id === selectedSlotId) ?? null)
+    : null;
+
   useEffect(() => {
     if (error) toast.error(error);
   }, [error]);
@@ -33,8 +39,8 @@ export function BotConfig() {
         </p>
         <h1 className="text-3xl font-semibold tracking-tight">Prompt Slots</h1>
         <p className="mt-1 text-muted-foreground">
-          Configure the core logic for each Model Context Protocol (MCP) slot.
-          Changes take effect across all active instances upon version save.
+          Click a slot to edit its prompt. Changes take effect across all
+          active instances upon version save.
         </p>
       </div>
 
@@ -50,19 +56,16 @@ export function BotConfig() {
         {/* Main content */}
         <div className="flex-1 space-y-8">
           {/* Prompt Slot Cards */}
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {isLoading
-              ? Array.from({ length: 4 }).map((_, i) => (
-                  <Card key={i} className="h-[360px] animate-pulse bg-muted/40" />
+              ? Array.from({ length: 5 }).map((_, i) => (
+                  <Card key={i} className="h-[140px] animate-pulse bg-muted/40" />
                 ))
               : slots.map((slot) => (
                   <PromptSlotCard
                     key={slot.id}
                     slot={slot}
-                    onUpdatePrompt={updatePrompt}
-                    onSwitchModel={switchModel}
-                    onSaveVersion={saveVersion}
-                    onRollback={rollbackToVersion}
+                    onClick={setSelectedSlotId}
                   />
                 ))}
           </div>
@@ -71,6 +74,16 @@ export function BotConfig() {
           <ErrorLog entries={errorLog} slots={slots} />
         </div>
       </div>
+
+      <PromptSlotDrawer
+        slot={selectedSlot}
+        open={selectedSlot !== null}
+        onClose={() => setSelectedSlotId(null)}
+        onUpdatePrompt={updatePrompt}
+        onSwitchModel={switchModel}
+        onSaveVersion={saveVersion}
+        onRollback={rollbackToVersion}
+      />
     </div>
   );
 }

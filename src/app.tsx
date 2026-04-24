@@ -4,6 +4,7 @@ import { QuestionLog } from "@/pages/QuestionLog";
 import { QuestionDetailPage } from "@/pages/QuestionDetailPage";
 import { KnowledgeHealth } from "@/pages/KnowledgeHealth";
 import { BotConfig } from "@/pages/BotConfig";
+import { PromptSlotDetailPage } from "@/pages/PromptSlotDetailPage";
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
           <Route path="questions/:id" element={<QuestionDetailPage />} />
           <Route path="knowledge" element={<KnowledgeHealth />} />
           <Route path="config" element={<BotConfig />} />
+          <Route path="config/:slotId" element={<PromptSlotDetailPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
