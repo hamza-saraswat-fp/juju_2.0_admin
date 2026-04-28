@@ -1,68 +1,66 @@
-import { TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import type { QuestionStats } from "@/types/question";
-import { cn, formatCategory } from "@/lib/utils";
-
-// Note: the `lowConfidenceCount` field on QuestionStats is no longer rendered.
-// Confidence was hidden from the UI until we have calibrated scoring — the
-// bot still writes answer_confidence so the data keeps flowing for later.
+import { ratingMeta } from "@/config/ratingScale";
+import { cn } from "@/lib/utils";
 
 interface StatCardsProps {
   stats: QuestionStats;
 }
 
 export function StatCards({ stats }: StatCardsProps) {
+  const avgEmoji = stats.avgRatingToday !== null
+    ? ratingMeta(stats.avgRatingToday).emoji
+    : null;
+  const avgTone = stats.avgRatingToday !== null
+    ? ratingMeta(stats.avgRatingToday).toneClass
+    : "";
+
   return (
     <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
-      {/* Questions Today */}
       <StatCard
-        label="Questions Today"
+        label="Questions today"
         value={stats.questionsToday.toLocaleString()}
         mono
-        // Trend delta is a hardcoded mock value — we don't have historical
-        // data yet. This shapes the UI for when Supabase provides real deltas.
-        trend={{ value: "+12", direction: "up", label: "vs. yesterday" }}
       />
 
-      {/* 👍 Rate */}
       <StatCard
-        label="👍 Rate"
-        value={`${stats.thumbsUpRate}%`}
+        label="Avg rating today"
+        value={
+          stats.avgRatingToday !== null
+            ? `${avgEmoji} ${stats.avgRatingToday.toFixed(1)}`
+            : "—"
+        }
+        valueClassName={avgTone}
+        subtitle={
+          stats.ratingCountToday > 0
+            ? `${stats.ratingCountToday} rating${stats.ratingCountToday === 1 ? "" : "s"}`
+            : "No ratings yet"
+        }
+      />
+
+      <StatCard
+        label="Escalated today"
+        value={stats.escalatedToday.toString()}
         mono
-        valueClassName={cn(
-          stats.thumbsUpRate >= 75
-            ? "text-green-600"
-            : stats.thumbsUpRate >= 40
-              ? "text-amber-600"
-              : "text-red-600",
-        )}
-        trend={{ value: "+3%", direction: "up", label: "vs. last week" }}
+        valueClassName={stats.escalatedToday > 0 ? "text-amber-600" : ""}
+        subtitle={
+          stats.escalatedToday > 0
+            ? `🚨 Auto ${stats.escalatedTodayAuto} · By user ${stats.escalatedTodayUser}`
+            : "None"
+        }
       />
 
-      {/* Unanswered */}
       <StatCard
-        label="Unanswered"
-        value={stats.unansweredCount.toString()}
-        mono
-        valueClassName={stats.unansweredCount > 0 ? "text-amber-600" : ""}
-      />
-
-      {/* Top Category */}
-      <StatCard
-        label="Top Category"
-        value={formatCategory(stats.topCategory.category)}
-        subtitle={`${stats.topCategory.count} questions`}
+        label="Top sub-category"
+        value={stats.topSubCategory?.label ?? "—"}
+        subtitle={
+          stats.topSubCategory
+            ? `${stats.topSubCategory.count} question${stats.topSubCategory.count === 1 ? "" : "s"}`
+            : "No sub-categories yet today"
+        }
       />
     </div>
   );
-}
-
-// ── Helpers ──────────────────────────────────────────────────
-
-interface Trend {
-  value: string;
-  direction: "up" | "down";
-  label: string;
 }
 
 function StatCard({
@@ -71,14 +69,12 @@ function StatCard({
   subtitle,
   mono,
   valueClassName,
-  trend,
 }: {
   label: string;
   value: string;
   subtitle?: string;
   mono?: boolean;
   valueClassName?: string;
-  trend?: Trend;
 }) {
   return (
     <Card>
@@ -98,25 +94,7 @@ function StatCard({
         {subtitle && (
           <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
         )}
-        {trend && (
-          <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-            {trend.direction === "up" ? (
-              <TrendingUp className="h-3 w-3 text-green-500" />
-            ) : (
-              <TrendingDown className="h-3 w-3 text-red-500" />
-            )}
-            <span
-              className={
-                trend.direction === "up" ? "text-green-600" : "text-red-600"
-              }
-            >
-              {trend.value}
-            </span>
-            <span>{trend.label}</span>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
 }
-

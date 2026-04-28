@@ -1,15 +1,11 @@
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useQuestions } from "@/hooks/useQuestions";
-import { useThumbsVote } from "@/hooks/useThumbsVote";
-import { CURRENT_ADMIN } from "@/types/question";
 import { QuestionDetail } from "@/components/question-log/QuestionDetail";
 
 export function QuestionDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { getById, overrideCategory, isLoading, error, refetch } =
-    useQuestions();
-  const { vote, getVotes } = useThumbsVote({ onMutate: refetch });
+  const { getById, isLoading, error } = useQuestions();
 
   const question = id ? getById(id) : null;
 
@@ -46,8 +42,6 @@ export function QuestionDetailPage() {
     );
   }
 
-  const adminVotes = getVotes(question.id);
-
   return (
     <div className="mx-auto max-w-4xl">
       <Link
@@ -58,14 +52,7 @@ export function QuestionDetailPage() {
         Back to Question Log
       </Link>
       <div className="rounded-lg border bg-card p-6">
-        <QuestionDetail
-          question={question}
-          adminVotes={adminVotes}
-          onVote={(value) =>
-            vote(question, CURRENT_ADMIN.id, CURRENT_ADMIN.name, value)
-          }
-          onOverrideCategory={(cat) => overrideCategory(question.id, cat)}
-        />
+        <QuestionDetail question={question} />
       </div>
     </div>
   );

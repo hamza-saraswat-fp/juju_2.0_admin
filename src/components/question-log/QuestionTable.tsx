@@ -1,12 +1,4 @@
-import {
-  ThumbsUp,
-  ThumbsDown,
-  Minus,
-  BookOpen,
-  FolderOpen,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -18,20 +10,20 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Question } from "@/types/question";
+import { ratingMeta } from "@/config/ratingScale";
+import { ownerName } from "@/config/jujuTaxonomy";
 import {
-  relativeTime,
-  deriveFeedbackState,
+  averageRating,
+  cn,
   formatCategory,
+  relativeTime,
 } from "@/lib/utils";
-
-// ── Props ───────────────────────────────────────────────────
 
 interface QuestionTableProps {
   questions: Question[];
   isLoading: boolean;
   onSelectQuestion: (question: Question) => void;
   onResetFilters: () => void;
-  // Pagination
   totalFiltered: number;
   page: number;
   perPage: number;
@@ -49,7 +41,8 @@ export function QuestionTable({
   onPageChange,
 }: QuestionTableProps) {
   if (isLoading) return <TableSkeleton />;
-  if (questions.length === 0 && totalFiltered === 0) return <EmptyState onReset={onResetFilters} />;
+  if (questions.length === 0 && totalFiltered === 0)
+    return <EmptyState onReset={onResetFilters} />;
 
   const totalPages = Math.ceil(totalFiltered / perPage);
   const start = page * perPage + 1;
@@ -61,14 +54,14 @@ export function QuestionTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[100px]">Feedback</TableHead>
+              <TableHead className="w-[110px]">Rating</TableHead>
               <TableHead>Question</TableHead>
-              <TableHead className="w-[130px]">Category</TableHead>
-              <TableHead className="hidden w-[120px] md:table-cell">
-                Sources
+              <TableHead className="w-[200px]">Category</TableHead>
+              <TableHead className="hidden w-[150px] md:table-cell">
+                Escalation
               </TableHead>
-              <TableHead className="hidden w-[140px] text-right md:table-cell">
-                Activity
+              <TableHead className="hidden w-[160px] text-right md:table-cell">
+                Asked
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -79,39 +72,27 @@ export function QuestionTable({
                 className="cursor-pointer"
                 onClick={() => onSelectQuestion(q)}
               >
-                {/* Feedback — dominant verdict at a glance.
-                    Admin can see full breakdown in the drawer (Phase 3).
-                    Shows dominant icon + count. Mixed = both counts. None = dash. */}
                 <TableCell>
-                  <FeedbackCell votes={q.thumbsVotes} />
+                  <RatingCell question={q} />
                 </TableCell>
 
-                {/* Question text */}
                 <TableCell className="max-w-sm">
                   <p className="truncate font-medium">{q.questionText}</p>
-                  {q.needsReview && (
-                    <Badge
-                      variant="outline"
-                      className="mt-1 border-amber-300 bg-amber-50 text-amber-700"
-                    >
-                      Needs Review
-                    </Badge>
-                  )}
+                  <StatusChips question={q} />
                 </TableCell>
 
-                {/* Category */}
                 <TableCell>
-                  <CategoryBadge question={q} />
+                  <CategoryCell question={q} />
                 </TableCell>
 
-                {/* Sources (hidden on mobile) */}
                 <TableCell className="hidden md:table-cell">
-                  <SourcesCell sources={q.sources} />
+                  <EscalationCell question={q} />
                 </TableCell>
 
-                {/* Activity (hidden on mobile) */}
                 <TableCell className="hidden text-right md:table-cell">
-                  <p className="text-sm font-medium">{q.asker.name}</p>
+                  <p className="text-sm font-medium">
+                    {q.asker.displayName}
+                  </p>
                   <p className="font-mono text-xs text-muted-foreground">
                     {relativeTime(q.askedAt)}
                   </p>
@@ -122,7 +103,6 @@ export function QuestionTable({
         </Table>
       </div>
 
-      {/* Pagination */}
       <div className="mt-4 flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           Showing {start}–{end} of {totalFiltered}
@@ -152,87 +132,135 @@ export function QuestionTable({
   );
 }
 
-// ── Cell sub-components ─────────────────────────────────────
-
-function FeedbackCell({ votes }: { votes: Question["thumbsVotes"] }) {
-  const state = deriveFeedbackState(votes);
-  const ups = votes.filter((v) => v.vote === "up").length;
-  const downs = votes.filter((v) => v.vote === "down").length;
-
-  if (state === "none") {
-    return <Minus className="h-4 w-4 text-muted-foreground/40" />;
+function RatingCell({ question }: { question: Question }) {
+  const avg = averageRating(question.ratings);
+  if (avg === null) {
+    return <span className="text-muted-foreground/40">—</span>;
   }
-  if (state === "positive") {
-    return (
-      <span className="inline-flex items-center gap-1 text-green-600">
-        <ThumbsUp className="h-4 w-4" />
-        <span className="font-mono text-xs">{ups}</span>
-      </span>
-    );
-  }
-  if (state === "negative") {
-    return (
-      <span className="inline-flex items-center gap-1 text-red-600">
-        <ThumbsDown className="h-4 w-4" />
-        <span className="font-mono text-xs">{downs}</span>
-      </span>
-    );
-  }
-  // mixed
+  const meta = ratingMeta(avg);
   return (
-    <span className="inline-flex items-center gap-1 text-amber-600">
-      <ThumbsUp className="h-3.5 w-3.5" />
-      <span className="font-mono text-xs">{ups}</span>
-      <span className="text-muted-foreground">/</span>
-      <ThumbsDown className="h-3.5 w-3.5" />
-      <span className="font-mono text-xs">{downs}</span>
+    <span
+      className={cn("inline-flex items-center gap-1.5", meta.toneClass)}
+      title={`${question.ratings.length} rating${question.ratings.length === 1 ? "" : "s"}`}
+    >
+      <span className="text-base leading-none">{meta.emoji}</span>
+      <span className="font-mono text-xs">{avg.toFixed(1)}</span>
+      <span className="text-[10px] text-muted-foreground">
+        ({question.ratings.length})
+      </span>
     </span>
   );
 }
 
-function CategoryBadge({ question }: { question: Question }) {
-  const effective = question.manualCategoryOverride ?? question.aiCategory;
-  const label = formatCategory(effective);
+function StatusChips({ question }: { question: Question }) {
+  const chips: { label: string; className: string }[] = [];
+
+  if (question.verifiedAnswer) {
+    chips.push({
+      label: "✍️ Owner-answered",
+      className: "border-blue-300 bg-blue-50 text-blue-700",
+    });
+  }
+  if (question.verification) {
+    chips.push({
+      label: "✅ Verified",
+      className: "border-green-300 bg-green-50 text-green-700",
+    });
+  }
+  if (question.categoryReroute) {
+    chips.push({
+      label: "🔀 Rerouted",
+      className: "border-purple-300 bg-purple-50 text-purple-700",
+    });
+  }
+
+  if (chips.length === 0) return null;
 
   return (
-    <div>
-      <Badge variant="outline">{label}</Badge>
-      {question.manualCategoryOverride && (
-        <span className="ml-1 text-[10px] text-primary-blue">override</span>
+    <div className="mt-1 flex flex-wrap gap-1">
+      {chips.map((c) => (
+        <Badge key={c.label} variant="outline" className={c.className}>
+          {c.label}
+        </Badge>
+      ))}
+    </div>
+  );
+}
+
+function CategoryCell({ question }: { question: Question }) {
+  const reroute = question.categoryReroute;
+  const original = question.category;
+
+  if (!original && !reroute) {
+    return <span className="text-xs text-muted-foreground/50">—</span>;
+  }
+
+  if (reroute) {
+    return (
+      <div className="space-y-0.5">
+        <div className="flex items-center gap-1">
+          <Badge
+            variant="outline"
+            className="border-green-300 bg-green-50 text-green-700"
+          >
+            ↺ {formatCategory(reroute.newCategory)}
+          </Badge>
+        </div>
+        {original && original !== reroute.newCategory && (
+          <p className="text-[10px] text-muted-foreground line-through">
+            {formatCategory(original)}
+          </p>
+        )}
+        {question.subCategory && (
+          <p className="text-[11px] text-muted-foreground">
+            {question.subCategory}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-0.5">
+      <Badge variant="outline">{formatCategory(original)}</Badge>
+      {question.subCategory && (
+        <p className="text-[11px] text-muted-foreground">
+          {question.subCategory}
+        </p>
       )}
     </div>
   );
 }
 
-function SourcesCell({ sources }: { sources: Question["sources"] }) {
-  if (sources.length === 0) {
-    return <span className="text-xs text-muted-foreground/50">—</span>;
+function EscalationCell({ question }: { question: Question }) {
+  const e = question.escalation;
+  if (!e) {
+    return <span className="text-xs text-muted-foreground/40">—</span>;
   }
-  const hasKC = sources.some((s) => s.sourceType === "knowledge_center");
-  const hasConfluence = sources.some((s) => s.sourceType === "confluence");
-
+  if (e.type === "auto") {
+    return (
+      <div
+        className="text-xs"
+        title={`Auto-escalated · ${relativeTime(e.at)}`}
+      >
+        <span className="font-medium text-red-600">🚨 Auto</span>
+        <span className="ml-1 text-muted-foreground">
+          → {ownerName(e.toSlackId)}
+        </span>
+      </div>
+    );
+  }
   return (
-    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-      {hasKC && (
-        <span className="inline-flex items-center gap-0.5 text-blue-600">
-          <BookOpen className="h-3.5 w-3.5" />
-          <span className="text-[9px] font-medium">KC</span>
-        </span>
-      )}
-      {hasConfluence && (
-        <span className="inline-flex items-center gap-0.5 text-amber-600">
-          <FolderOpen className="h-3.5 w-3.5" />
-          <span className="text-[9px] font-medium">Conf</span>
-        </span>
-      )}
-      <span className="text-xs">
-        {sources.length} source{sources.length !== 1 && "s"}
+    <div className="text-xs" title={`Escalated · ${relativeTime(e.at)}`}>
+      <span className="font-medium text-orange-600">
+        🚨 {ownerName(e.triggeredBySlackId)}
       </span>
-    </span>
+      <span className="ml-1 text-muted-foreground">
+        → {ownerName(e.toSlackId)}
+      </span>
+    </div>
   );
 }
-
-// ── Skeleton ────────────────────────────────────────────────
 
 function TableSkeleton() {
   return (
@@ -240,14 +268,14 @@ function TableSkeleton() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">Feedback</TableHead>
+            <TableHead className="w-[110px]">Rating</TableHead>
             <TableHead>Question</TableHead>
-            <TableHead className="w-[130px]">Category</TableHead>
-            <TableHead className="hidden w-[120px] md:table-cell">
-              Sources
+            <TableHead className="w-[200px]">Category</TableHead>
+            <TableHead className="hidden w-[150px] md:table-cell">
+              Escalation
             </TableHead>
-            <TableHead className="hidden w-[140px] text-right md:table-cell">
-              Activity
+            <TableHead className="hidden w-[160px] text-right md:table-cell">
+              Asked
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -255,17 +283,17 @@ function TableSkeleton() {
           {Array.from({ length: 5 }).map((_, i) => (
             <TableRow key={i}>
               <TableCell>
-                <div className="h-4 w-8 animate-pulse rounded bg-muted" />
+                <div className="h-4 w-12 animate-pulse rounded bg-muted" />
               </TableCell>
               <TableCell>
                 <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
                 <div className="mt-2 h-3 w-1/2 animate-pulse rounded bg-muted" />
               </TableCell>
               <TableCell>
-                <div className="h-6 w-20 animate-pulse rounded bg-muted" />
+                <div className="h-6 w-24 animate-pulse rounded bg-muted" />
               </TableCell>
               <TableCell className="hidden md:table-cell">
-                <div className="h-4 w-16 animate-pulse rounded bg-muted" />
+                <div className="h-4 w-20 animate-pulse rounded bg-muted" />
               </TableCell>
               <TableCell className="hidden md:table-cell">
                 <div className="ml-auto h-4 w-20 animate-pulse rounded bg-muted" />
@@ -277,8 +305,6 @@ function TableSkeleton() {
     </div>
   );
 }
-
-// ── Empty state ─────────────────────────────────────────────
 
 function EmptyState({ onReset }: { onReset: () => void }) {
   return (

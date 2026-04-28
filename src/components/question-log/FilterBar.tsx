@@ -3,9 +3,15 @@ import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES } from "@/types/question";
-import type { FeedbackState } from "@/types/question";
-import type { QuestionFilters, TimeRange } from "@/lib/questionFilters";
-import { cn, formatCategory } from "@/lib/utils";
+import { CATEGORY_LABELS, SUB_CATEGORIES } from "@/config/jujuTaxonomy";
+import type {
+  EscalationFilter,
+  QuestionFilters,
+  RatingFilter,
+  TimeRange,
+  VerifiedFilter,
+} from "@/lib/questionFilters";
+import { cn } from "@/lib/utils";
 
 interface FilterBarProps {
   filters: QuestionFilters;
@@ -23,22 +29,23 @@ export function FilterBar({
   onFilterChange,
   onSearchChange,
 }: FilterBarProps) {
-  // Debounced search — 300ms
   const [localSearch, setLocalSearch] = useState(searchQuery);
   useEffect(() => {
     const timer = setTimeout(() => onSearchChange(localSearch), 300);
     return () => clearTimeout(timer);
   }, [localSearch, onSearchChange]);
 
+  const subCategoryOptions =
+    filters.category === "ALL" ? [] : SUB_CATEGORIES[filters.category];
+
   return (
     <div className="sticky top-16 z-40 mb-6 bg-background/80 py-4 backdrop-blur-sm">
       <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-card p-2">
-        {/* Search */}
         <div className="relative min-w-[200px] flex-grow">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Search questions & answers..."
+            placeholder="Search questions, answers, verified answers…"
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
             className="pl-9"
@@ -47,11 +54,13 @@ export function FilterBar({
 
         <Divider />
 
-        {/* Category */}
         <FilterGroup label="Category">
           <Pill
             active={filters.category === "ALL"}
-            onClick={() => onFilterChange("category", "ALL")}
+            onClick={() => {
+              onFilterChange("category", "ALL");
+              onFilterChange("subCategory", "ALL");
+            }}
           >
             All
           </Pill>
@@ -59,16 +68,102 @@ export function FilterBar({
             <Pill
               key={cat}
               active={filters.category === cat}
-              onClick={() => onFilterChange("category", cat)}
+              onClick={() => {
+                onFilterChange("category", cat);
+                onFilterChange("subCategory", "ALL");
+              }}
             >
-              {formatCategory(cat)}
+              {CATEGORY_LABELS[cat]}
+            </Pill>
+          ))}
+        </FilterGroup>
+
+        {subCategoryOptions.length > 0 && (
+          <>
+            <Divider />
+            <FilterGroup label="Sub">
+              <select
+                value={filters.subCategory}
+                onChange={(e) => onFilterChange("subCategory", e.target.value)}
+                className="h-7 rounded-sm border border-input bg-transparent px-2 text-xs outline-none focus:border-ring focus:ring-1 focus:ring-ring/50"
+              >
+                <option value="ALL">All sub-categories</option>
+                {subCategoryOptions.map((sub) => (
+                  <option key={sub} value={sub}>
+                    {sub}
+                  </option>
+                ))}
+              </select>
+            </FilterGroup>
+          </>
+        )}
+
+        <Divider />
+
+        <FilterGroup label="Rating">
+          {(
+            [
+              ["ALL", "All"],
+              ["4-5", "😃🙂"],
+              ["3", "😐"],
+              ["1-2", "😡😞"],
+              ["none", "None"],
+            ] as [RatingFilter, string][]
+          ).map(([value, label]) => (
+            <Pill
+              key={value}
+              active={filters.rating === value}
+              onClick={() => onFilterChange("rating", value)}
+            >
+              {label}
             </Pill>
           ))}
         </FilterGroup>
 
         <Divider />
 
-        {/* Time Range */}
+        <FilterGroup label="Escalation">
+          {(
+            [
+              ["ALL", "All"],
+              ["none", "None"],
+              ["any", "Any"],
+              ["auto", "🚨 Auto"],
+              ["user", "🚨 User"],
+            ] as [EscalationFilter, string][]
+          ).map(([value, label]) => (
+            <Pill
+              key={value}
+              active={filters.escalation === value}
+              onClick={() => onFilterChange("escalation", value)}
+            >
+              {label}
+            </Pill>
+          ))}
+        </FilterGroup>
+
+        <Divider />
+
+        <FilterGroup label="Verified">
+          {(
+            [
+              ["ALL", "All"],
+              ["yes", "Yes"],
+              ["no", "No"],
+            ] as [VerifiedFilter, string][]
+          ).map(([value, label]) => (
+            <Pill
+              key={value}
+              active={filters.hasVerifiedAnswer === value}
+              onClick={() => onFilterChange("hasVerifiedAnswer", value)}
+            >
+              {label}
+            </Pill>
+          ))}
+        </FilterGroup>
+
+        <Divider />
+
         <FilterGroup label="Time">
           {(
             [
@@ -87,35 +182,10 @@ export function FilterBar({
             </Pill>
           ))}
         </FilterGroup>
-
-        <Divider />
-
-        {/* Feedback */}
-        <FilterGroup label="Feedback">
-          {(
-            [
-              ["ALL", "All"],
-              ["positive", "👍"],
-              ["negative", "👎"],
-              ["none", "None"],
-            ] as [FeedbackState | "ALL", string][]
-          ).map(([value, label]) => (
-            <Pill
-              key={value}
-              active={filters.feedbackState === value}
-              onClick={() => onFilterChange("feedbackState", value)}
-            >
-              {label}
-            </Pill>
-          ))}
-        </FilterGroup>
-
       </div>
     </div>
   );
 }
-
-// ── Sub-components ──────────────────────────────────────────
 
 function FilterGroup({
   label,

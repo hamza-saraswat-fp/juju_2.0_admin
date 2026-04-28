@@ -91,7 +91,7 @@ export const mockSourceStats: SourceStats[] = sources.map((source) => {
 export const mockCoverageGaps: CoverageGap[] = [
   {
     id: "cg-01",
-    category: "payments" as Category,
+    category: "growth" as Category,
     description:
       "Voided invoice behavior in QuickBooks sync is undocumented. Multiple agents confused.",
     unansweredRate: 40,
@@ -136,7 +136,7 @@ export const mockUnmatchedQuestions: UnmatchedQuestion[] = [
     questionText:
       "How to process a credit card payment over the phone and send a receipt?",
     hits: 14,
-    category: "payments" as Category,
+    category: "growth" as Category,
   },
   {
     id: "uq-02",
@@ -163,7 +163,7 @@ export const mockUnmatchedQuestions: UnmatchedQuestion[] = [
     questionText:
       "If you void an invoice, what happens in QuickBooks?",
     hits: 7,
-    category: "payments" as Category,
+    category: "growth" as Category,
   },
   {
     id: "uq-06",
@@ -183,6 +183,6 @@ export const mockUnmatchedQuestions: UnmatchedQuestion[] = [
     id: "uq-08",
     questionText: "Do archived estimates show up in reporting?",
     hits: 4,
-    category: "payments" as Category,
+    category: "growth" as Category,
   },
 ];

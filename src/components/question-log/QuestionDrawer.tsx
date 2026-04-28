@@ -8,24 +8,18 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { QuestionDetail } from "./QuestionDetail";
-import type { Question, ThumbsVote, Category } from "@/types/question";
+import type { Question } from "@/types/question";
 
 interface QuestionDrawerProps {
   question: Question | null;
   open: boolean;
   onClose: () => void;
-  adminVotes: ThumbsVote[];
-  onVote: (value: "up" | "down") => void;
-  onOverrideCategory: (category: Category | null) => void;
 }
 
 export function QuestionDrawer({
   question,
   open,
   onClose,
-  adminVotes,
-  onVote,
-  onOverrideCategory,
 }: QuestionDrawerProps) {
   const navigate = useNavigate();
 
@@ -53,12 +47,7 @@ export function QuestionDrawer({
               </Button>
             </SheetHeader>
             <div className="flex-1 overflow-y-auto p-6">
-              <QuestionDetail
-                question={question}
-                adminVotes={adminVotes}
-                onVote={onVote}
-                onOverrideCategory={onOverrideCategory}
-              />
+              <QuestionDetail question={question} />
             </div>
           </>
         )}

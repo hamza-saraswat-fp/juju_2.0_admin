@@ -1,15 +1,13 @@
-// 10 categories, mirrored from the fp-evan/fieldpulse-support-agent autoresponder.
-// Also enforced at the DB layer by a CHECK constraint on juju_feedback.category.
+// Top-level owner-routing categories. Mirrored from the bot repo's
+// src/config/owner_mapping.json and enforced at the DB layer by CHECK
+// constraints on juju_feedback.category and juju_feedback.manual_category_override.
 export const CATEGORIES = [
-  "invoicing",
-  "scheduling",
-  "payments",
-  "mobile-app",
+  "accounting_software",
+  "core_platform",
+  "growth",
   "integrations",
-  "user-management",
-  "booking-portal",
-  "inventory",
-  "reporting",
+  "ai",
+  "operator",
   "general",
 ] as const;
 
@@ -24,46 +22,92 @@ export interface Source {
   sourceType: SourceType;
 }
 
-export interface ThumbsVote {
-  adminId: string;
-  adminName: string;
-  vote: "up" | "down";
+export type StarRating = 1 | 2 | 3 | 4 | 5;
+
+export type EscalationType = "user" | "auto";
+
+export type FailureType =
+  | "no_sources"
+  | "partial_sources"
+  | "contradictory"
+  | "off_topic";
+
+export interface Rating {
+  id: string;
+  stars: StarRating;
+  raterSlackId: string;
+  raterDisplayName: string;
+  writtenFeedback: string | null;
+  ratedAt: string;
+  // True when this rating was reconstructed from a legacy 'helpful'/'not_helpful' vote.
+  legacy: boolean;
 }
 
-export type FeedbackState = "positive" | "negative" | "mixed" | "none";
+export interface VerifiedAnswer {
+  id: string;
+  ownerSlackId: string;
+  ownerDisplayName: string;
+  text: string;
+  manualCategoryOverride: Category | null;
+  submittedAt: string;
+}
 
-// Derived from confidence number: High ≥85, Med 60-84, Low <60
-export type ConfidenceTier = "high" | "medium" | "low";
+export interface Verification {
+  id: string;
+  verifierSlackId: string;
+  verifierDisplayName: string;
+  verifiedAt: string;
+}
+
+export interface CategoryReroute {
+  id: string;
+  rerouterSlackId: string;
+  rerouterDisplayName: string;
+  newCategory: Category;
+  reroutedAt: string;
+}
+
+export interface Escalation {
+  at: string;
+  toSlackId: string;
+  type: EscalationType;
+  triggeredBySlackId: string | null;
+  failureType: FailureType | null;
+  failureConfidence: number | null;
+}
 
 export interface Question {
   id: string;
-  askedAt: string; // ISO timestamp
-  asker: {
-    name: string;
-    slackId: string;
-  };
+  askedAt: string;
+  asker: { slackId: string; displayName: string };
   questionText: string;
-  threadContext: string | null; // Optional Slack thread context
   answerText: string | null;
-  sources: Source[];
-  aiCategory: Category; // AI-assigned (from juju_feedback.category)
-  manualCategoryOverride: Category | null; // Admin override
-  confidence: number; // 0-100 (derived from answer_confidence * 100)
-  latencyMs: number;
-  thumbsVotes: ThumbsVote[];
+  answerType: string;
+  category: Category | null;
+  subCategory: string | null;
+  categoryConfidence: number | null;
+  answerConfidence: number | null;
+  latencyMs: number | null;
+  mintlifySources: Source[];
+  confluenceSources: Source[];
+  searchQueries: unknown | null;
   slackThreadUrl: string;
-  // True when the parent row has at least one child vote = 'not_helpful'.
-  // Surfaces as the "Unanswered" tab / badge in the UI.
-  needsReview: boolean;
+
+  ratings: Rating[]; // newest first
+  verification: Verification | null; // latest wins
+  verifiedAnswer: VerifiedAnswer | null; // latest wins
+  categoryReroute: CategoryReroute | null; // latest wins; overrides `category` for effective routing
+  escalation: Escalation | null;
 }
 
-// Derived stats (computed by useQuestions)
+// Stats computed by useQuestions for the StatCards.
 export interface QuestionStats {
   questionsToday: number;
-  thumbsUpRate: number; // 0-100
-  unansweredCount: number;
-  topCategory: { category: Category; count: number };
-  lowConfidenceCount: number; // confidence < 60
+  avgRatingToday: number | null; // null when no ratings today
+  ratingCountToday: number;
+  escalatedToday: number;
+  escalatedTodayAuto: number;
+  escalatedTodayUser: number;
+  topSubCategory: { label: string; count: number } | null;
+  needsAttentionCount: number; // escalated AND no verified answer
 }
-
-export const CURRENT_ADMIN = { id: "admin-1", name: "Hamza" } as const;

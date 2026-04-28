@@ -1,7 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
 import { useQuestions } from "@/hooks/useQuestions";
-import { useThumbsVote } from "@/hooks/useThumbsVote";
-import { CURRENT_ADMIN } from "@/types/question";
 import {
   filterQuestions,
   searchQuestions,
@@ -11,23 +9,22 @@ import {
 import { StatCards } from "@/components/question-log/StatCards";
 import { FilterBar } from "@/components/question-log/FilterBar";
 import { QuestionTable } from "@/components/question-log/QuestionTable";
-import { QuestionTabs } from "@/components/question-log/Tabs";
+import {
+  QuestionTabs,
+  type QuestionTab,
+} from "@/components/question-log/Tabs";
 import { QuestionDrawer } from "@/components/question-log/QuestionDrawer";
 
 const PER_PAGE = 20;
 
 export function QuestionLog() {
-  const { questions, stats, overrideCategory, isLoading, error, refetch } =
-    useQuestions();
-  const { vote, getVotes } = useThumbsVote({ onMutate: refetch });
+  const { questions, stats, isLoading, error } = useQuestions();
 
-  // Filter state
   const [filters, setFilters] = useState<QuestionFilters>(DEFAULT_FILTERS);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
-  const [activeTab, setActiveTab] = useState<"all" | "unanswered">("all");
+  const [activeTab, setActiveTab] = useState<QuestionTab>("all");
 
-  // Drawer state — store ID, derive question from array (always fresh after mutations)
   const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(
     null,
   );
@@ -35,7 +32,6 @@ export function QuestionLog() {
     ? (questions.find((q) => q.id === selectedQuestionId) ?? null)
     : null;
 
-  // Filter change resets page
   const handleFilterChange = useCallback(
     <K extends keyof QuestionFilters>(key: K, value: QuestionFilters[K]) => {
       setFilters((prev) => ({ ...prev, [key]: value }));
@@ -49,7 +45,7 @@ export function QuestionLog() {
     setPage(0);
   }, []);
 
-  const handleTabChange = useCallback((tab: "all" | "unanswered") => {
+  const handleTabChange = useCallback((tab: QuestionTab) => {
     setActiveTab(tab);
     setPage(0);
   }, []);
@@ -61,7 +57,6 @@ export function QuestionLog() {
     setActiveTab("all");
   }, []);
 
-  // Data pipeline: search → filter → paginate
   const searched = useMemo(
     () => searchQuestions(questions, searchQuery),
     [questions, searchQuery],
@@ -71,7 +66,7 @@ export function QuestionLog() {
     () =>
       filterQuestions(searched, {
         ...filters,
-        onlyUnanswered: activeTab === "unanswered",
+        onlyNeedsAttention: activeTab === "needs_attention",
       }),
     [searched, filters, activeTab],
   );
@@ -81,44 +76,21 @@ export function QuestionLog() {
     return filtered.slice(start, start + PER_PAGE);
   }, [filtered, page]);
 
-  // Unanswered count for the tab badge (within current search + filters, NOT tab)
-  const unansweredCount = useMemo(
+  const needsAttentionCount = useMemo(
     () =>
       filterQuestions(searched, {
         ...filters,
-        onlyUnanswered: true,
+        onlyNeedsAttention: true,
       }).length,
     [searched, filters],
   );
 
-  // Drawer voting + category props
-  const drawerAdminVotes = selectedQuestion
-    ? getVotes(selectedQuestion.id)
-    : [];
-  const handleDrawerVote = useCallback(
-    (value: "up" | "down") => {
-      if (selectedQuestion) {
-        vote(selectedQuestion, CURRENT_ADMIN.id, CURRENT_ADMIN.name, value);
-      }
-    },
-    [selectedQuestion, vote],
-  );
-  const handleDrawerOverride = useCallback(
-    (category: import("@/types/question").Category | null) => {
-      if (selectedQuestion) {
-        overrideCategory(selectedQuestion.id, category);
-      }
-    },
-    [selectedQuestion, overrideCategory],
-  );
-
   return (
     <div>
-      {/* Page header */}
       <div className="mb-8">
         <h1 className="text-3xl font-semibold tracking-tight">Question Log</h1>
         <p className="mt-1 text-muted-foreground">
-          Real-time analysis of user inquiries and engine confidence scores.
+          Live mirror of Juju's answers, ratings, escalations, and verified responses.
         </p>
       </div>
 
@@ -139,7 +111,7 @@ export function QuestionLog() {
 
       <QuestionTabs
         activeTab={activeTab}
-        unansweredCount={unansweredCount}
+        needsAttentionCount={needsAttentionCount}
         onTabChange={handleTabChange}
       />
 
@@ -158,9 +130,6 @@ export function QuestionLog() {
         question={selectedQuestion}
         open={selectedQuestion !== null}
         onClose={() => setSelectedQuestionId(null)}
-        adminVotes={drawerAdminVotes}
-        onVote={handleDrawerVote}
-        onOverrideCategory={handleDrawerOverride}
       />
     </div>
   );

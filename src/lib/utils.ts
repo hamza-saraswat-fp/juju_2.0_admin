@@ -1,28 +1,10 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { ConfidenceTier, ThumbsVote, FeedbackState } from "@/types/question";
+import type { Category, Rating } from "@/types/question";
+import { CATEGORY_LABELS } from "@/config/jujuTaxonomy";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
-}
-
-/** Derive tier from numeric confidence: High ≥85, Med 60-84, Low <60 */
-export function confidenceTier(score: number): ConfidenceTier {
-  if (score >= 85) return "high";
-  if (score >= 60) return "medium";
-  return "low";
-}
-
-/** Tailwind classes for confidence tier badge */
-export function confidenceColor(tier: ConfidenceTier): string {
-  switch (tier) {
-    case "high":
-      return "text-green-700 bg-green-100";
-    case "medium":
-      return "text-amber-700 bg-amber-100";
-    case "low":
-      return "text-red-700 bg-red-100";
-  }
 }
 
 /** Human-readable relative time: "2m ago", "3h ago", "5d ago" */
@@ -40,28 +22,39 @@ export function relativeTime(iso: string): string {
 }
 
 /** Format milliseconds: "12.5s" or "850ms" */
-export function formatMs(ms: number): string {
+export function formatMs(ms: number | null): string {
+  if (ms === null || ms === undefined) return "—";
   if (ms < 1000) return `${ms}ms`;
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
-/** Display label for the 10 autoresponder categories.
- *  'mobile-app' → 'Mobile App', 'user-management' → 'User Management', etc. */
-export function formatCategory(cat: string): string {
-  if (!cat) return "";
+/** Display label for a category. Accepts unknown strings safely. */
+export function formatCategory(cat: string | null | undefined): string {
+  if (!cat) return "—";
+  if (cat in CATEGORY_LABELS) return CATEGORY_LABELS[cat as Category];
   return cat
-    .split("-")
+    .split(/[-_]/)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 }
 
-/** Derive aggregate feedback state from a votes array */
-export function deriveFeedbackState(votes: ThumbsVote[]): FeedbackState {
-  if (votes.length === 0) return "none";
-  const ups = votes.filter((v) => v.vote === "up").length;
-  const downs = votes.filter((v) => v.vote === "down").length;
-  if (ups > 0 && downs > 0) return "mixed";
-  if (ups > 0) return "positive";
-  if (downs > 0) return "negative";
-  return "none";
+export function averageRating(ratings: Rating[]): number | null {
+  if (ratings.length === 0) return null;
+  return ratings.reduce((s, r) => s + r.stars, 0) / ratings.length;
+}
+
+export interface RatingBreakdown {
+  count: number;
+  avg: number | null;
+  byStars: Record<1 | 2 | 3 | 4 | 5, number>;
+}
+
+export function ratingBreakdown(ratings: Rating[]): RatingBreakdown {
+  const byStars: RatingBreakdown["byStars"] = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  for (const r of ratings) byStars[r.stars] += 1;
+  return {
+    count: ratings.length,
+    avg: averageRating(ratings),
+    byStars,
+  };
 }
