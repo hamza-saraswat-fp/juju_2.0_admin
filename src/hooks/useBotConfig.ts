@@ -6,6 +6,7 @@ import type {
   ErrorLogEntry,
 } from "@/types/botConfig";
 import {
+  createPromptSlot as createPromptSlotApi,
   fetchAllPrompts,
   nextPatchVersion,
   rollbackPrompt,
@@ -107,6 +108,24 @@ export function useBotConfig() {
     [refresh],
   );
 
+  const createSlot = useCallback(
+    async (params: {
+      id: string;
+      promptText: string;
+      model: string;
+      description: string;
+    }) => {
+      try {
+        await createPromptSlotApi(params);
+        await refresh();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to create slot");
+        throw e;
+      }
+    },
+    [refresh],
+  );
+
   const addEvalCriterion = useCallback((name: string) => {
     setEvalCriteria((prev) => [
       ...prev,
@@ -130,6 +149,7 @@ export function useBotConfig() {
     switchModel,
     saveVersion,
     rollbackToVersion,
+    createSlot,
     addEvalCriterion,
   };
 }
