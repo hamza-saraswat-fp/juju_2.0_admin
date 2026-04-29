@@ -24,3 +24,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Static HTML mockups (early redesign phase, not used by the app)
+prototypes/

@@ -32,15 +32,20 @@
   --color-ring: var(--ring);
 
   /* Design system custom colors (from DESIGN.md) */
-  --color-surface: #f8f9fd;
+  --color-surface: #faf9f5;
+  --color-surface-deep: #f4f2eb;
   --color-surface-container-lowest: #ffffff;
   --color-surface-container-low: #f2f3f7;
   --color-surface-container: #edeef2;
   --color-surface-container-high: #e7e8ec;
   --color-surface-container-highest: #e1e2e6;
+  --color-card-soft: #fdfcf8;
   --color-on-surface: #191c1f;
   --color-on-surface-variant: #464650;
+  --color-on-surface-faint: #91919c;
   --color-outline-variant: #c7c5d2;
+  --color-line: rgba(20, 20, 30, 0.06);
+  --color-line-strong: rgba(20, 20, 30, 0.10);
   --color-primary-navy: #00034d;
   --color-primary-blue: #488bd6;
   --color-primary-container: #0b1155;
@@ -49,6 +54,12 @@
   --color-error: #ba1a1a;
   --color-error-container: #ffdad6;
   --color-on-error-container: #93000a;
+
+  /* Page accent (defaults to blue — Question Log).
+     Distinct from shadcn's --color-accent (used for menu hover surfaces). */
+  --color-page-accent: #488bd6;
+  --color-page-accent-soft: #e8f0fa;
+  --color-page-accent-deep: #2f6eb0;
 
   /* Radius */
   --radius-sm: calc(var(--radius) * 0.6);
@@ -79,7 +90,13 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
-  --radius: 0.625rem;
+  --radius: 0.75rem;
+
+  /* Soft elevation tokens */
+  --shadow-card: 0 1px 2px rgba(15, 15, 40, 0.04), 0 8px 24px -12px rgba(15, 15, 40, 0.10);
+  --shadow-card-hover: 0 1px 2px rgba(15, 15, 40, 0.05), 0 16px 40px -16px rgba(15, 15, 40, 0.18);
+  --shadow-elevated: 0 2px 4px rgba(15, 15, 40, 0.06), 0 24px 56px -20px rgba(15, 15, 40, 0.20);
+  --accent-glow: rgba(72, 139, 214, 0.10);
 }
 
 @layer base {
@@ -87,9 +104,42 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-surface text-on-surface;
+    @apply text-on-surface antialiased;
+    background:
+      radial-gradient(1200px 600px at 50% -200px, var(--accent-glow) 0%, transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(0, 3, 77, 0.05) 0%, transparent 65%),
+      var(--color-surface);
+    background-attachment: fixed;
+    min-height: 100vh;
+    transition: background 360ms ease;
   }
   html {
     @apply font-sans;
   }
 }
+
+/* ============================================================
+   Page-entry motion
+   ============================================================ */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fade-up 460ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+.fade-d-1 { animation-delay: 40ms; }
+.fade-d-2 { animation-delay: 80ms; }
+.fade-d-3 { animation-delay: 120ms; }
+.fade-d-4 { animation-delay: 160ms; }
+.fade-d-5 { animation-delay: 200ms; }
+.fade-d-6 { animation-delay: 240ms; }
+.fade-d-7 { animation-delay: 280ms; }
+.fade-d-8 { animation-delay: 320ms; }

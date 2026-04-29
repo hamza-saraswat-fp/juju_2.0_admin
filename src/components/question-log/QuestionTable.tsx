@@ -7,8 +7,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import type { Question } from "@/types/question";
 import { ratingMeta } from "@/config/ratingScale";
 import { ownerName } from "@/config/jujuTaxonomy";
@@ -49,18 +49,18 @@ export function QuestionTable({
   const end = Math.min((page + 1) * perPage, totalFiltered);
 
   return (
-    <div>
-      <div className="overflow-x-auto rounded-lg border">
+    <Card className="overflow-hidden p-0">
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-[110px]">Rating</TableHead>
-              <TableHead>Question</TableHead>
-              <TableHead className="w-[200px]">Category</TableHead>
-              <TableHead className="hidden w-[150px] md:table-cell">
+            <TableRow className="border-line hover:bg-transparent">
+              <TableHead className="w-[110px] text-on-surface-variant">Rating</TableHead>
+              <TableHead className="text-on-surface-variant">Question</TableHead>
+              <TableHead className="w-[200px] text-on-surface-variant">Category</TableHead>
+              <TableHead className="hidden w-[150px] text-on-surface-variant md:table-cell">
                 Escalation
               </TableHead>
-              <TableHead className="hidden w-[160px] text-right md:table-cell">
+              <TableHead className="hidden w-[160px] text-right text-on-surface-variant md:table-cell">
                 Asked
               </TableHead>
             </TableRow>
@@ -69,7 +69,7 @@ export function QuestionTable({
             {questions.map((q) => (
               <TableRow
                 key={q.id}
-                className="cursor-pointer"
+                className="cursor-pointer border-line transition-colors hover:bg-page-accent/[0.05]"
                 onClick={() => onSelectQuestion(q)}
               >
                 <TableCell>
@@ -90,10 +90,8 @@ export function QuestionTable({
                 </TableCell>
 
                 <TableCell className="hidden text-right md:table-cell">
-                  <p className="text-sm font-medium">
-                    {q.asker.displayName}
-                  </p>
-                  <p className="font-mono text-xs text-muted-foreground">
+                  <p className="text-sm font-medium">{q.asker.displayName}</p>
+                  <p className="font-mono text-xs text-on-surface-faint">
                     {relativeTime(q.askedAt)}
                   </p>
                 </TableCell>
@@ -103,11 +101,15 @@ export function QuestionTable({
         </Table>
       </div>
 
-      <div className="mt-4 flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Showing {start}–{end} of {totalFiltered}
+      <div className="flex items-center justify-between border-t border-line bg-card-soft px-5 py-3.5">
+        <p className="text-xs text-on-surface-variant">
+          Showing{" "}
+          <span className="font-medium text-on-surface">
+            {start}–{end}
+          </span>{" "}
+          of {totalFiltered}
         </p>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -117,6 +119,9 @@ export function QuestionTable({
             <ChevronLeft className="h-4 w-4" />
             Prev
           </Button>
+          <span className="px-2 font-mono text-xs text-on-surface-variant">
+            {page + 1} / {Math.max(totalPages, 1)}
+          </span>
           <Button
             variant="outline"
             size="sm"
@@ -128,14 +133,14 @@ export function QuestionTable({
           </Button>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
 function RatingCell({ question }: { question: Question }) {
   const avg = averageRating(question.ratings);
   if (avg === null) {
-    return <span className="text-muted-foreground/40">—</span>;
+    return <span className="text-on-surface-faint/60">—</span>;
   }
   const meta = ratingMeta(avg);
   return (
@@ -145,7 +150,7 @@ function RatingCell({ question }: { question: Question }) {
     >
       <span className="text-base leading-none">{meta.emoji}</span>
       <span className="font-mono text-xs">{avg.toFixed(1)}</span>
-      <span className="text-[10px] text-muted-foreground">
+      <span className="text-[10px] text-on-surface-faint">
         ({question.ratings.length})
       </span>
     </span>
@@ -158,30 +163,36 @@ function StatusChips({ question }: { question: Question }) {
   if (question.verifiedAnswer) {
     chips.push({
       label: "✍️ Owner-answered",
-      className: "border-blue-300 bg-blue-50 text-blue-700",
+      className: "border-blue-200 bg-blue-50 text-blue-700",
     });
   }
   if (question.verification) {
     chips.push({
       label: "✅ Verified",
-      className: "border-green-300 bg-green-50 text-green-700",
+      className: "border-emerald-200 bg-emerald-50 text-emerald-700",
     });
   }
   if (question.categoryReroute) {
     chips.push({
       label: "🔀 Rerouted",
-      className: "border-purple-300 bg-purple-50 text-purple-700",
+      className: "border-purple-200 bg-purple-50 text-purple-700",
     });
   }
 
   if (chips.length === 0) return null;
 
   return (
-    <div className="mt-1 flex flex-wrap gap-1">
+    <div className="mt-1.5 flex flex-wrap gap-1.5">
       {chips.map((c) => (
-        <Badge key={c.label} variant="outline" className={c.className}>
+        <span
+          key={c.label}
+          className={cn(
+            "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium leading-tight",
+            c.className,
+          )}
+        >
           {c.label}
-        </Badge>
+        </span>
       ))}
     </div>
   );
@@ -192,27 +203,22 @@ function CategoryCell({ question }: { question: Question }) {
   const original = question.category;
 
   if (!original && !reroute) {
-    return <span className="text-xs text-muted-foreground/50">—</span>;
+    return <span className="text-xs text-on-surface-faint/60">—</span>;
   }
 
   if (reroute) {
     return (
-      <div className="space-y-0.5">
-        <div className="flex items-center gap-1">
-          <Badge
-            variant="outline"
-            className="border-green-300 bg-green-50 text-green-700"
-          >
-            ↺ {formatCategory(reroute.newCategory)}
-          </Badge>
-        </div>
+      <div className="space-y-1">
+        <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+          ↺ {formatCategory(reroute.newCategory)}
+        </span>
         {original && original !== reroute.newCategory && (
-          <p className="text-[10px] text-muted-foreground line-through">
+          <p className="text-[10px] text-on-surface-faint line-through">
             {formatCategory(original)}
           </p>
         )}
         {question.subCategory && (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-[11px] text-on-surface-faint">
             {question.subCategory}
           </p>
         )}
@@ -221,10 +227,12 @@ function CategoryCell({ question }: { question: Question }) {
   }
 
   return (
-    <div className="space-y-0.5">
-      <Badge variant="outline">{formatCategory(original)}</Badge>
+    <div className="space-y-1">
+      <span className="inline-flex items-center rounded-full border border-line-strong bg-surface-deep px-2.5 py-0.5 text-xs font-medium text-on-surface-variant">
+        {formatCategory(original)}
+      </span>
       {question.subCategory && (
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-[11px] text-on-surface-faint">
           {question.subCategory}
         </p>
       )}
@@ -235,7 +243,7 @@ function CategoryCell({ question }: { question: Question }) {
 function EscalationCell({ question }: { question: Question }) {
   const e = question.escalation;
   if (!e) {
-    return <span className="text-xs text-muted-foreground/40">—</span>;
+    return <span className="text-xs text-on-surface-faint/60">—</span>;
   }
   if (e.type === "auto") {
     return (
@@ -243,8 +251,8 @@ function EscalationCell({ question }: { question: Question }) {
         className="text-xs"
         title={`Auto-escalated · ${relativeTime(e.at)}`}
       >
-        <span className="font-medium text-red-600">🚨 Auto</span>
-        <span className="ml-1 text-muted-foreground">
+        <span className="font-medium text-rose-600">🚨 Auto</span>
+        <span className="ml-1 text-on-surface-faint">
           → {ownerName(e.toSlackId)}
         </span>
       </div>
@@ -252,10 +260,10 @@ function EscalationCell({ question }: { question: Question }) {
   }
   return (
     <div className="text-xs" title={`Escalated · ${relativeTime(e.at)}`}>
-      <span className="font-medium text-orange-600">
+      <span className="font-medium text-amber-700">
         🚨 {ownerName(e.triggeredBySlackId)}
       </span>
-      <span className="ml-1 text-muted-foreground">
+      <span className="ml-1 text-on-surface-faint">
         → {ownerName(e.toSlackId)}
       </span>
     </div>
@@ -264,57 +272,57 @@ function EscalationCell({ question }: { question: Question }) {
 
 function TableSkeleton() {
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <Card className="overflow-hidden p-0">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead className="w-[110px]">Rating</TableHead>
-            <TableHead>Question</TableHead>
-            <TableHead className="w-[200px]">Category</TableHead>
-            <TableHead className="hidden w-[150px] md:table-cell">
+          <TableRow className="border-line hover:bg-transparent">
+            <TableHead className="w-[110px] text-on-surface-variant">Rating</TableHead>
+            <TableHead className="text-on-surface-variant">Question</TableHead>
+            <TableHead className="w-[200px] text-on-surface-variant">Category</TableHead>
+            <TableHead className="hidden w-[150px] text-on-surface-variant md:table-cell">
               Escalation
             </TableHead>
-            <TableHead className="hidden w-[160px] text-right md:table-cell">
+            <TableHead className="hidden w-[160px] text-right text-on-surface-variant md:table-cell">
               Asked
             </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {Array.from({ length: 5 }).map((_, i) => (
-            <TableRow key={i}>
+            <TableRow key={i} className="border-line">
               <TableCell>
-                <div className="h-4 w-12 animate-pulse rounded bg-muted" />
+                <div className="h-4 w-12 animate-pulse rounded bg-surface-deep" />
               </TableCell>
               <TableCell>
-                <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
-                <div className="mt-2 h-3 w-1/2 animate-pulse rounded bg-muted" />
+                <div className="h-4 w-3/4 animate-pulse rounded bg-surface-deep" />
+                <div className="mt-2 h-3 w-1/2 animate-pulse rounded bg-surface-deep" />
               </TableCell>
               <TableCell>
-                <div className="h-6 w-24 animate-pulse rounded bg-muted" />
+                <div className="h-6 w-24 animate-pulse rounded bg-surface-deep" />
               </TableCell>
               <TableCell className="hidden md:table-cell">
-                <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+                <div className="h-4 w-20 animate-pulse rounded bg-surface-deep" />
               </TableCell>
               <TableCell className="hidden md:table-cell">
-                <div className="ml-auto h-4 w-20 animate-pulse rounded bg-muted" />
+                <div className="ml-auto h-4 w-20 animate-pulse rounded bg-surface-deep" />
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-    </div>
+    </Card>
   );
 }
 
 function EmptyState({ onReset }: { onReset: () => void }) {
   return (
-    <div className="rounded-lg border border-dashed p-12 text-center">
-      <p className="text-muted-foreground">
+    <Card className="p-12 text-center">
+      <p className="text-on-surface-variant">
         No questions match your filters.
       </p>
       <Button variant="outline" size="sm" className="mt-4" onClick={onReset}>
         Reset filters
       </Button>
-    </div>
+    </Card>
   );
 }

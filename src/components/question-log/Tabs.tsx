@@ -1,9 +1,4 @@
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export type QuestionTab = "all" | "needs_attention";
 
@@ -24,17 +19,25 @@ export function QuestionTabs({
       onValueChange={(v) => onTabChange(v as QuestionTab)}
       className="mb-6"
     >
-      <TabsList>
-        <TabsTrigger value="all">All Questions</TabsTrigger>
-        <TabsTrigger value="needs_attention" className="gap-2">
+      <TabsList className="h-auto rounded-xl border border-line bg-surface-deep p-1">
+        <TabsTrigger
+          value="all"
+          className="rounded-lg px-3 py-1.5 text-sm font-medium data-active:bg-card data-active:text-on-surface data-active:shadow-[0_1px_2px_rgba(15,15,40,0.06),0_1px_0_rgba(15,15,40,0.04)]"
+        >
+          All Questions
+          <span className="ml-1.5 font-mono text-xs text-on-surface-variant">
+            ·
+          </span>
+        </TabsTrigger>
+        <TabsTrigger
+          value="needs_attention"
+          className="rounded-lg px-3 py-1.5 text-sm font-medium data-active:bg-card data-active:text-on-surface data-active:shadow-[0_1px_2px_rgba(15,15,40,0.06),0_1px_0_rgba(15,15,40,0.04)]"
+        >
           Needs Attention
           {needsAttentionCount > 0 && (
-            <Badge
-              variant="destructive"
-              className="ml-1 h-5 min-w-[20px] px-1.5 text-[10px]"
-            >
+            <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-100 px-1.5 font-mono text-[10px] font-medium text-rose-700">
               {needsAttentionCount}
-            </Badge>
+            </span>
           )}
         </TabsTrigger>
       </TabsList>
