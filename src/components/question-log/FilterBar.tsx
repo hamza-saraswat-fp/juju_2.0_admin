@@ -1,15 +1,20 @@
-import { useState, useEffect } from "react";
-import { Search } from "lucide-react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { Check, ChevronDown, RotateCcw, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES } from "@/types/question";
 import { CATEGORY_LABELS, SUB_CATEGORIES } from "@/config/jujuTaxonomy";
-import type {
-  EscalationFilter,
-  QuestionFilters,
-  RatingFilter,
-  TimeRange,
-  VerifiedFilter,
+import {
+  DEFAULT_FILTERS,
+  type EscalationFilter,
+  type QuestionFilters,
+  type RatingFilter,
+  type VerifiedFilter,
 } from "@/lib/questionFilters";
 import { cn } from "@/lib/utils";
 
@@ -30,205 +35,260 @@ export function FilterBar({
   onSearchChange,
 }: FilterBarProps) {
   const [localSearch, setLocalSearch] = useState(searchQuery);
+
+  // Sync local state when searchQuery changes from outside (e.g. RepeatQuestions click).
   useEffect(() => {
+    setLocalSearch(searchQuery);
+  }, [searchQuery]);
+
+  // Debounce local typing back to the parent. Skip when the values already
+  // match (i.e. we just synced from props) to avoid bouncing.
+  useEffect(() => {
+    if (localSearch === searchQuery) return;
     const timer = setTimeout(() => onSearchChange(localSearch), 300);
     return () => clearTimeout(timer);
-  }, [localSearch, onSearchChange]);
+  }, [localSearch, searchQuery, onSearchChange]);
 
   const subCategoryOptions =
     filters.category === "ALL" ? [] : SUB_CATEGORIES[filters.category];
 
+  // Time range is no longer surfaced in the filter bar (each card owns its
+  // own time toggle), so we don't include it in active-state or reset.
+  const isAnyFilterActive =
+    filters.category !== DEFAULT_FILTERS.category ||
+    filters.subCategory !== DEFAULT_FILTERS.subCategory ||
+    filters.rating !== DEFAULT_FILTERS.rating ||
+    filters.escalation !== DEFAULT_FILTERS.escalation ||
+    filters.hasVerifiedAnswer !== DEFAULT_FILTERS.hasVerifiedAnswer ||
+    localSearch.length > 0;
+
+  const handleReset = () => {
+    setLocalSearch("");
+    onFilterChange("category", DEFAULT_FILTERS.category);
+    onFilterChange("subCategory", DEFAULT_FILTERS.subCategory);
+    onFilterChange("rating", DEFAULT_FILTERS.rating);
+    onFilterChange("escalation", DEFAULT_FILTERS.escalation);
+    onFilterChange("hasVerifiedAnswer", DEFAULT_FILTERS.hasVerifiedAnswer);
+  };
+
   return (
-    <div className="sticky top-16 z-40 mb-6 bg-background/80 py-4 backdrop-blur-sm">
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-card p-2">
-        <div className="relative min-w-[200px] flex-grow">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    <div className="sticky top-16 z-40 mb-6 bg-surface/75 py-4 backdrop-blur-md">
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-card p-3 shadow-[var(--shadow-card)]">
+        <div className="relative min-w-[220px] flex-grow">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-faint" />
           <Input
             type="text"
             placeholder="Search questions, answers, verified answers…"
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
-            className="pl-9"
+            className="rounded-xl pl-9 focus-visible:ring-page-accent/30"
           />
         </div>
 
-        <Divider />
-
-        <FilterGroup label="Category">
-          <Pill
-            active={filters.category === "ALL"}
-            onClick={() => {
-              onFilterChange("category", "ALL");
-              onFilterChange("subCategory", "ALL");
-            }}
-          >
-            All
-          </Pill>
-          {CATEGORIES.map((cat) => (
-            <Pill
-              key={cat}
-              active={filters.category === cat}
-              onClick={() => {
-                onFilterChange("category", cat);
-                onFilterChange("subCategory", "ALL");
-              }}
-            >
-              {CATEGORY_LABELS[cat]}
-            </Pill>
-          ))}
-        </FilterGroup>
+        <FilterDropdown
+          label="Category"
+          value={filters.category}
+          defaultValue={DEFAULT_FILTERS.category}
+          options={[
+            { value: "ALL", label: "All categories", shortLabel: "All" },
+            ...CATEGORIES.map((cat) => ({
+              value: cat,
+              label: CATEGORY_LABELS[cat],
+            })),
+          ]}
+          onChange={(v) => {
+            onFilterChange("category", v as QuestionFilters["category"]);
+            onFilterChange("subCategory", "ALL");
+          }}
+        />
 
         {subCategoryOptions.length > 0 && (
-          <>
-            <Divider />
-            <FilterGroup label="Sub">
-              <select
-                value={filters.subCategory}
-                onChange={(e) => onFilterChange("subCategory", e.target.value)}
-                className="h-7 rounded-sm border border-input bg-transparent px-2 text-xs outline-none focus:border-ring focus:ring-1 focus:ring-ring/50"
-              >
-                <option value="ALL">All sub-categories</option>
-                {subCategoryOptions.map((sub) => (
-                  <option key={sub} value={sub}>
-                    {sub}
-                  </option>
-                ))}
-              </select>
-            </FilterGroup>
-          </>
+          <FilterDropdown
+            label="Sub"
+            value={filters.subCategory}
+            defaultValue="ALL"
+            options={[
+              { value: "ALL", label: "All sub-categories", shortLabel: "All" },
+              ...subCategoryOptions.map((sub) => ({ value: sub, label: sub })),
+            ]}
+            onChange={(v) => onFilterChange("subCategory", v)}
+          />
         )}
 
-        <Divider />
-
-        <FilterGroup label="Rating">
-          {(
+        <FilterDropdown
+          label="Rating"
+          value={filters.rating}
+          defaultValue={DEFAULT_FILTERS.rating}
+          options={
             [
-              ["ALL", "All"],
-              ["4-5", "😃🙂"],
-              ["3", "😐"],
-              ["1-2", "😡😞"],
-              ["none", "None"],
-            ] as [RatingFilter, string][]
-          ).map(([value, label]) => (
-            <Pill
-              key={value}
-              active={filters.rating === value}
-              onClick={() => onFilterChange("rating", value)}
-            >
-              {label}
-            </Pill>
-          ))}
-        </FilterGroup>
+              { value: "ALL", label: "All ratings", shortLabel: "All" },
+              { value: "4-5", label: "😃🙂 Positive (4–5)" },
+              { value: "3", label: "😐 Neutral (3)" },
+              { value: "1-2", label: "😡😞 Negative (1–2)" },
+              { value: "none", label: "Unrated" },
+            ] as DropdownOption<RatingFilter>[]
+          }
+          onChange={(v) => onFilterChange("rating", v)}
+        />
 
-        <Divider />
-
-        <FilterGroup label="Escalation">
-          {(
+        <FilterDropdown
+          label="Escalation"
+          value={filters.escalation}
+          defaultValue={DEFAULT_FILTERS.escalation}
+          options={
             [
-              ["ALL", "All"],
-              ["none", "None"],
-              ["any", "Any"],
-              ["auto", "🚨 Auto"],
-              ["user", "🚨 User"],
-            ] as [EscalationFilter, string][]
-          ).map(([value, label]) => (
-            <Pill
-              key={value}
-              active={filters.escalation === value}
-              onClick={() => onFilterChange("escalation", value)}
-            >
-              {label}
-            </Pill>
-          ))}
-        </FilterGroup>
+              { value: "ALL", label: "All escalations", shortLabel: "All" },
+              { value: "none", label: "None" },
+              { value: "any", label: "Any escalation" },
+              { value: "auto", label: "🚨 Auto-escalated" },
+              { value: "user", label: "🚨 User-escalated" },
+            ] as DropdownOption<EscalationFilter>[]
+          }
+          onChange={(v) => onFilterChange("escalation", v)}
+        />
 
-        <Divider />
-
-        <FilterGroup label="Verified">
-          {(
+        <FilterDropdown
+          label="Verified"
+          value={filters.hasVerifiedAnswer}
+          defaultValue={DEFAULT_FILTERS.hasVerifiedAnswer}
+          options={
             [
-              ["ALL", "All"],
-              ["yes", "Yes"],
-              ["no", "No"],
-            ] as [VerifiedFilter, string][]
-          ).map(([value, label]) => (
-            <Pill
-              key={value}
-              active={filters.hasVerifiedAnswer === value}
-              onClick={() => onFilterChange("hasVerifiedAnswer", value)}
-            >
-              {label}
-            </Pill>
-          ))}
-        </FilterGroup>
+              { value: "ALL", label: "All", shortLabel: "All" },
+              { value: "yes", label: "Verified only" },
+              { value: "no", label: "Unverified only" },
+            ] as DropdownOption<VerifiedFilter>[]
+          }
+          onChange={(v) => onFilterChange("hasVerifiedAnswer", v)}
+        />
 
-        <Divider />
+        {/* Time dropdown removed in Phase 4 — each card now owns its own
+            time-range toggle. `filters.timeRange` is still kept in the
+            QuestionFilters type for the underlying table search logic. */}
 
-        <FilterGroup label="Time">
-          {(
-            [
-              ["24h", "24h"],
-              ["7d", "7 days"],
-              ["30d", "30 days"],
-              ["all", "All time"],
-            ] as [TimeRange, string][]
-          ).map(([value, label]) => (
-            <Pill
-              key={value}
-              active={filters.timeRange === value}
-              onClick={() => onFilterChange("timeRange", value)}
-            >
-              {label}
-            </Pill>
-          ))}
-        </FilterGroup>
+        {isAnyFilterActive && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleReset}
+            className="ml-auto h-8 gap-1.5 text-on-surface-variant hover:text-on-surface"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Reset
+          </Button>
+        )}
       </div>
     </div>
   );
 }
 
-function FilterGroup({
+type DropdownOption<T extends string> = {
+  value: T;
+  label: ReactNode;
+  shortLabel?: ReactNode;
+};
+
+function FilterDropdown<T extends string>({
   label,
-  children,
+  value,
+  defaultValue,
+  options,
+  onChange,
 }: {
   label: string;
-  children: React.ReactNode;
+  value: T;
+  defaultValue: T;
+  options: DropdownOption<T>[];
+  onChange: (value: T) => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const isActive = value !== defaultValue;
+  const current = options.find((o) => o.value === value);
+  const triggerLabel = isActive
+    ? current?.label ?? value
+    : current?.shortLabel ?? current?.label ?? value;
+
   return (
-    <div className="flex items-center gap-2 px-1">
-      <span className="text-[0.6875rem] font-semibold uppercase tracking-widest text-muted-foreground">
-        {label}
-      </span>
-      <div className="flex gap-0.5 rounded-md bg-muted p-0.5">{children}</div>
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className={cn(
+          "flex h-8 items-center gap-1.5 rounded-xl border border-line-strong bg-card px-3 text-sm text-on-surface transition-colors hover:border-page-accent/50",
+          open && "border-page-accent ring-2 ring-page-accent/25",
+          isActive &&
+            !open &&
+            "border-page-accent/40 ring-2 ring-page-accent/20",
+        )}
+      >
+        <span className="text-on-surface-variant">{label}</span>
+        <span className="max-w-[200px] truncate font-medium">
+          {triggerLabel}
+        </span>
+        <ChevronDown
+          className={cn(
+            "h-3.5 w-3.5 text-on-surface-variant transition-transform",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+      {open && (
+        <div
+          role="listbox"
+          className="absolute left-0 top-[calc(100%+4px)] z-50 min-w-[200px] origin-top overflow-hidden rounded-xl border border-line bg-popover py-1 shadow-[var(--shadow-card-hover)] animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 duration-150"
+        >
+          {options.map((o) => {
+            const selected = o.value === value;
+            return (
+              <button
+                key={o.value}
+                type="button"
+                role="option"
+                aria-selected={selected}
+                onClick={() => {
+                  onChange(o.value);
+                  setOpen(false);
+                }}
+                className={cn(
+                  "flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors hover:bg-page-accent/10",
+                  selected
+                    ? "font-medium text-page-accent-deep"
+                    : "text-on-surface",
+                )}
+              >
+                <span className="flex-1">{o.label}</span>
+                {selected && (
+                  <Check className="h-3.5 w-3.5 text-page-accent-deep" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
-}
-
-function Pill({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <Button
-      variant={active ? "default" : "ghost"}
-      size="sm"
-      onClick={onClick}
-      className={cn(
-        "h-7 rounded-sm px-2.5 text-xs font-medium",
-        active && "bg-primary-navy text-white hover:bg-primary-navy/90",
-        !active && "text-muted-foreground hover:text-foreground",
-      )}
-    >
-      {children}
-    </Button>
-  );
-}
-
-function Divider() {
-  return <div className="hidden h-8 w-px bg-border sm:block" />;
 }
