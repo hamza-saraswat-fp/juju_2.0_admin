@@ -7,6 +7,11 @@ export interface AppConfig {
   digest_channel_id: string | null;
   daily_digest_template: string | null;
   weekly_digest_template: string | null;
+  daily_send_hour_chicago: number;
+  daily_send_weekdays_only: boolean;
+  weekly_send_hour_chicago: number;
+  /** 0 = Sunday, 1 = Monday, ..., 6 = Saturday (JS getDay convention). */
+  weekly_send_dow: number;
   updated_at: string;
 }
 
@@ -39,7 +44,7 @@ export function useAppConfig() {
         supabase
           .from("app_config")
           .select(
-            "daily_digest_enabled, weekly_digest_enabled, digest_channel_id, daily_digest_template, weekly_digest_template, updated_at",
+            "daily_digest_enabled, weekly_digest_enabled, digest_channel_id, daily_digest_template, weekly_digest_template, daily_send_hour_chicago, daily_send_weekdays_only, weekly_send_hour_chicago, weekly_send_dow, updated_at",
           )
           .eq("id", 1)
           .single(),
