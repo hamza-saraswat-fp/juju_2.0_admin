@@ -1,4 +1,6 @@
-import type { Category } from "@/types/question";
+// Relative (not @/-aliased) so this file type-checks cleanly when bundled
+// transitively by the Vercel api/ tsconfig as well as the SPA.
+import type { Category } from "../types/question";
 
 export const CATEGORY_LABELS: Record<Category, string> = {
   accounting_software: "Accounting Software",

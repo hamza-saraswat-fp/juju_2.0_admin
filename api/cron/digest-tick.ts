@@ -27,14 +27,7 @@ export default async function handler(
   const { data: cfg, error: cfgErr } = await supabase
     .from("app_config")
     .select(
-      [
-        "daily_digest_enabled",
-        "daily_send_hour_chicago",
-        "daily_send_weekdays_only",
-        "weekly_digest_enabled",
-        "weekly_send_hour_chicago",
-        "weekly_send_dow",
-      ].join(", "),
+      "daily_digest_enabled, daily_send_hour_chicago, daily_send_weekdays_only, weekly_digest_enabled, weekly_send_hour_chicago, weekly_send_dow",
     )
     .eq("id", 1)
     .single();
