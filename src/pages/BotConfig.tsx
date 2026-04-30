@@ -7,6 +7,7 @@ import { PromptSlotCard } from "@/components/bot-config/PromptSlotCard";
 import { PromptSlotDrawer } from "@/components/bot-config/PromptSlotDrawer";
 import { NewPromptSlotSheet } from "@/components/bot-config/NewPromptSlotSheet";
 import { ConfigSidebar } from "@/components/bot-config/ConfigSidebar";
+import { DigestSection } from "@/components/bot-config/DigestSection";
 import { ErrorLog } from "@/components/bot-config/ErrorLog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -87,6 +88,9 @@ export function BotConfig() {
                   />
                 ))}
           </div>
+
+          {/* Slack digest */}
+          <DigestSection />
 
           {/* Error Log */}
           <ErrorLog entries={errorLog} slots={slots} />
