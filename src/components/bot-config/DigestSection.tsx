@@ -157,60 +157,26 @@ export function DigestSection() {
         {/* Daily row */}
         <DigestRow
           label="Daily digest"
-          subtitle={describeDaily(config)}
+          subtitle="Posted weekdays at 4:30 PM Central, summarizing yesterday."
           enabled={config.daily_digest_enabled}
           onToggle={(v) => handleToggle("daily", v)}
           lastSent={lastSent("daily")}
           onSendNow={() => handleSendNow("daily")}
           sending={sending === "daily"}
           channelSet={Boolean(config.digest_channel_id)}
-        >
-          <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-line pt-3 text-xs">
-            <span className="text-on-surface-variant">Time:</span>
-            <HourSelect
-              value={config.daily_send_hour_chicago}
-              onChange={(h) => update({ daily_send_hour_chicago: h })}
-            />
-            <label className="inline-flex cursor-pointer items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={config.daily_send_weekdays_only}
-                onChange={(e) =>
-                  update({ daily_send_weekdays_only: e.target.checked })
-                }
-                className="h-3.5 w-3.5 rounded border-line-strong"
-              />
-              <span className="text-on-surface-variant">Weekdays only</span>
-            </label>
-            <span className="text-on-surface-faint">(Chicago time)</span>
-          </div>
-        </DigestRow>
+        />
 
         {/* Weekly row */}
         <DigestRow
           label="Weekly digest"
-          subtitle={describeWeekly(config)}
+          subtitle="Posted Monday at 10:00 AM Central, summarizing the prior week."
           enabled={config.weekly_digest_enabled}
           onToggle={(v) => handleToggle("weekly", v)}
           lastSent={lastSent("weekly")}
           onSendNow={() => handleSendNow("weekly")}
           sending={sending === "weekly"}
           channelSet={Boolean(config.digest_channel_id)}
-        >
-          <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-line pt-3 text-xs">
-            <span className="text-on-surface-variant">Day:</span>
-            <DowSelect
-              value={config.weekly_send_dow}
-              onChange={(d) => update({ weekly_send_dow: d })}
-            />
-            <span className="text-on-surface-variant">at</span>
-            <HourSelect
-              value={config.weekly_send_hour_chicago}
-              onChange={(h) => update({ weekly_send_hour_chicago: h })}
-            />
-            <span className="text-on-surface-faint">(Chicago time)</span>
-          </div>
-        </DigestRow>
+        />
       </div>
 
       {/* Template editors */}
@@ -297,7 +263,6 @@ function DigestRow({
   onSendNow,
   sending,
   channelSet,
-  children,
 }: {
   label: string;
   subtitle: string;
@@ -307,7 +272,6 @@ function DigestRow({
   onSendNow: () => void;
   sending: boolean;
   channelSet: boolean;
-  children?: React.ReactNode;
 }) {
   return (
     <div className="rounded-xl border border-line bg-card-soft p-4">
@@ -336,88 +300,10 @@ function DigestRow({
           {sending ? "Sending…" : "Send now"}
         </Button>
       </div>
-      {children}
     </div>
   );
 }
 
-// ─── Schedule helpers ────────────────────────────────────────────────
-function formatHour(h: number): string {
-  if (h === 0) return "12 AM";
-  if (h === 12) return "12 PM";
-  if (h < 12) return `${h} AM`;
-  return `${h - 12} PM`;
-}
-
-const DOW_NAMES = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-] as const;
-
-function describeDaily(c: {
-  daily_send_hour_chicago: number;
-  daily_send_weekdays_only: boolean;
-}): string {
-  const days = c.daily_send_weekdays_only ? "weekdays" : "every day";
-  return `Posted ${days} at ${formatHour(c.daily_send_hour_chicago)} Chicago time, summarizing yesterday.`;
-}
-
-function describeWeekly(c: {
-  weekly_send_hour_chicago: number;
-  weekly_send_dow: number;
-}): string {
-  const day = DOW_NAMES[c.weekly_send_dow] ?? "Monday";
-  return `Posted ${day} at ${formatHour(c.weekly_send_hour_chicago)} Chicago time, summarizing the prior week.`;
-}
-
-function HourSelect({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (h: number) => void;
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(parseInt(e.target.value, 10))}
-      className="h-7 rounded-md border border-line-strong bg-card px-2 text-xs outline-none transition-colors focus:border-page-accent focus:ring-2 focus:ring-page-accent/30"
-    >
-      {Array.from({ length: 24 }, (_, h) => (
-        <option key={h} value={h}>
-          {formatHour(h)}
-        </option>
-      ))}
-    </select>
-  );
-}
-
-function DowSelect({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (d: number) => void;
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(parseInt(e.target.value, 10))}
-      className="h-7 rounded-md border border-line-strong bg-card px-2 text-xs outline-none transition-colors focus:border-page-accent focus:ring-2 focus:ring-page-accent/30"
-    >
-      {DOW_NAMES.map((name, i) => (
-        <option key={i} value={i}>
-          {name}
-        </option>
-      ))}
-    </select>
-  );
-}
 
 function TemplateEditor({
   label,
