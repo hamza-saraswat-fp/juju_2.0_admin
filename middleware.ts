@@ -8,10 +8,10 @@
 // Username is hardcoded to "admin". Change ADMIN_USERNAME below if you
 // want something else, or lift it to an env var later.
 //
-// One bypass: `/api/cron/*` accepts `Authorization: Bearer ${CRON_SECRET}`,
-// which is what Vercel Cron sends automatically. Manual triggers from the
-// admin UI still flow through Basic Auth (the browser carries the
-// credentials on same-origin fetches).
+// (Previously had a /api/cron/* bypass for Vercel Cron + a CRON_SECRET
+// env var. Removed once the digest moved to Supabase Edge Functions —
+// scheduling now happens in Postgres via pg_cron, never crosses the
+// Vercel edge.)
 
 import { next } from "@vercel/edge";
 
@@ -24,17 +24,6 @@ const REALM = "juju-admin";
 
 export default function middleware(request: Request): Response {
   const auth = request.headers.get("authorization");
-  const url = new URL(request.url);
-
-  // Vercel Cron path: accept Bearer cron secret.
-  if (url.pathname.startsWith("/api/cron/")) {
-    const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret && auth === `Bearer ${cronSecret}`) {
-      return next();
-    }
-    // Fall through to Basic Auth so a logged-in admin can still hit the
-    // cron endpoints by hand for ad-hoc testing.
-  }
 
   const expected = process.env.ADMIN_PASSWORD;
   if (!expected) {

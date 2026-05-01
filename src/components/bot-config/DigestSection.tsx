@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Hash, RotateCcw, Send } from "lucide-react";
 import { toast } from "sonner";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,16 @@ import {
   fetchWeeklyVars,
 } from "@/lib/digestPayload";
 import { cn, relativeTime } from "@/lib/utils";
+
+const DAY_NAMES_FULL = [
+  "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+];
+
+function formatHourCentral(hour: number): string {
+  const h12 = hour % 12 === 0 ? 12 : hour % 12;
+  const ampm = hour < 12 ? "AM" : "PM";
+  return `${h12}:00 ${ampm} Central`;
+}
 
 export function DigestSection() {
   const { config, log, isLoading, update, refetch } = useAppConfig();
@@ -99,18 +110,36 @@ export function DigestSection() {
   async function handleSendNow(kind: "daily" | "weekly") {
     setSending(kind);
     try {
-      const res = await fetch(`/api/digest/send-now?kind=${kind}`, {
-        method: "POST",
+      const { data, error } = await supabase.functions.invoke("digest", {
+        body: { kind, force: true },
       });
-      const body = await res.json().catch(() => ({}));
-      if (res.ok && body.status === "sent") {
+
+      if (error) {
+        // FunctionsHttpError carries the response body in `error.context`.
+        // Try JSON first (our function returns structured errors), fall
+        // back to text. This is what makes "Failed: HTTP 500" go away.
+        let detail = error.message;
+        if (error instanceof FunctionsHttpError) {
+          try {
+            const body = await error.context.clone().json();
+            detail = body?.error ?? body?.message ?? detail;
+          } catch {
+            try {
+              detail = (await error.context.clone().text()) || detail;
+            } catch { /* keep default */ }
+          }
+        }
+        console.error("[digest invoke]", error, detail);
+        toast.error(`Failed: ${detail}`);
+        return;
+      }
+
+      if (data?.status === "sent") {
         toast.success(`${kind === "daily" ? "Daily" : "Weekly"} digest sent`);
-      } else if (body.status === "skipped") {
-        toast.warning(`Skipped: ${body.message ?? "no channel configured"}`);
+      } else if (data?.status === "skipped") {
+        toast.warning(`Skipped: ${data.message ?? "no channel configured"}`);
       } else {
-        toast.error(
-          `Failed: ${body.error ?? body.message ?? `HTTP ${res.status}`}`,
-        );
+        toast.error(`Failed: ${data?.error ?? data?.message ?? "unknown"}`);
       }
     } catch (err) {
       toast.error(
@@ -157,26 +186,55 @@ export function DigestSection() {
         {/* Daily row */}
         <DigestRow
           label="Daily digest"
-          subtitle="Posted weekdays at 4:30 PM Central, summarizing yesterday."
+          subtitle={
+            config.daily_send_weekdays_only
+              ? `Posted weekdays at ${formatHourCentral(config.daily_send_hour_chicago)}, summarizing yesterday.`
+              : `Posted daily at ${formatHourCentral(config.daily_send_hour_chicago)}, summarizing yesterday.`
+          }
           enabled={config.daily_digest_enabled}
           onToggle={(v) => handleToggle("daily", v)}
           lastSent={lastSent("daily")}
           onSendNow={() => handleSendNow("daily")}
           sending={sending === "daily"}
           channelSet={Boolean(config.digest_channel_id)}
-        />
+        >
+          <ScheduleControls>
+            <HourSelect
+              label="Hour"
+              value={config.daily_send_hour_chicago}
+              onChange={(h) => update({ daily_send_hour_chicago: h })}
+            />
+            <CheckboxToggle
+              label="Weekdays only"
+              checked={config.daily_send_weekdays_only}
+              onChange={(v) => update({ daily_send_weekdays_only: v })}
+            />
+          </ScheduleControls>
+        </DigestRow>
 
         {/* Weekly row */}
         <DigestRow
           label="Weekly digest"
-          subtitle="Posted Monday at 10:00 AM Central, summarizing the prior week."
+          subtitle={`Posted ${DAY_NAMES_FULL[config.weekly_send_dow]} at ${formatHourCentral(config.weekly_send_hour_chicago)}, summarizing the prior week.`}
           enabled={config.weekly_digest_enabled}
           onToggle={(v) => handleToggle("weekly", v)}
           lastSent={lastSent("weekly")}
           onSendNow={() => handleSendNow("weekly")}
           sending={sending === "weekly"}
           channelSet={Boolean(config.digest_channel_id)}
-        />
+        >
+          <ScheduleControls>
+            <DowSelect
+              value={config.weekly_send_dow}
+              onChange={(d) => update({ weekly_send_dow: d })}
+            />
+            <HourSelect
+              label="Hour"
+              value={config.weekly_send_hour_chicago}
+              onChange={(h) => update({ weekly_send_hour_chicago: h })}
+            />
+          </ScheduleControls>
+        </DigestRow>
       </div>
 
       {/* Template editors */}
@@ -263,6 +321,7 @@ function DigestRow({
   onSendNow,
   sending,
   channelSet,
+  children,
 }: {
   label: string;
   subtitle: string;
@@ -272,6 +331,7 @@ function DigestRow({
   onSendNow: () => void;
   sending: boolean;
   channelSet: boolean;
+  children?: ReactNode;
 }) {
   return (
     <div className="rounded-xl border border-line bg-card-soft p-4">
@@ -300,7 +360,87 @@ function DigestRow({
           {sending ? "Sending…" : "Send now"}
         </Button>
       </div>
+      {children}
     </div>
+  );
+}
+
+function ScheduleControls({ children }: { children: ReactNode }) {
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-line pt-3">
+      {children}
+    </div>
+  );
+}
+
+function HourSelect({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (next: number) => Promise<unknown> | void;
+}) {
+  return (
+    <label className="flex items-center gap-1.5 text-xs text-on-surface-variant">
+      <span>{label}</span>
+      <select
+        className="rounded-md border border-line bg-card px-2 py-1 text-xs font-mono"
+        value={value}
+        onChange={(e) => onChange(parseInt(e.target.value, 10))}
+      >
+        {Array.from({ length: 24 }, (_, h) => (
+          <option key={h} value={h}>
+            {formatHourCentral(h)}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function DowSelect({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (next: number) => Promise<unknown> | void;
+}) {
+  return (
+    <label className="flex items-center gap-1.5 text-xs text-on-surface-variant">
+      <span>Day</span>
+      <select
+        className="rounded-md border border-line bg-card px-2 py-1 text-xs"
+        value={value}
+        onChange={(e) => onChange(parseInt(e.target.value, 10))}
+      >
+        {DAY_NAMES_FULL.map((name, idx) => (
+          <option key={idx} value={idx}>{name}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function CheckboxToggle({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (next: boolean) => Promise<unknown> | void;
+}) {
+  return (
+    <label className="flex items-center gap-1.5 text-xs text-on-surface-variant">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      {label}
+    </label>
   );
 }
 

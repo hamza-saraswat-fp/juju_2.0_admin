@@ -1,0 +1,12 @@
+# Supabase project config. The `project_id` is set automatically by
+# `supabase link --project-ref <ref>`; leaving it as a placeholder here
+# is fine for now — it's only used by the local CLI as a default.
+project_id = "juju-admin"
+
+# `digest` runs on a public URL and is gated by a static bearer in
+# Supabase Vault (see migration 0011_digest_cron.sql) plus the
+# SUPABASE_SERVICE_ROLE_KEY check inside the function. Disabling JWT
+# verification lets pg_cron call the function with a simple bearer
+# without needing a user session.
+[functions.digest]
+verify_jwt = false
