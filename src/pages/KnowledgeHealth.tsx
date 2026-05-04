@@ -4,6 +4,7 @@ import { SourceTable } from "@/components/knowledge-health/SourceTable";
 import { StaleContent } from "@/components/knowledge-health/StaleContent";
 import { CoverageGaps } from "@/components/knowledge-health/CoverageGaps";
 import { UnmatchedQuestions } from "@/components/knowledge-health/UnmatchedQuestions";
+import { DocRequestsTable } from "@/components/knowledge-health/DocRequestsTable";
 
 export function KnowledgeHealth() {
   const { sources, stats, coverageGaps, unmatchedQuestions, staleSources } =
@@ -32,6 +33,14 @@ export function KnowledgeHealth() {
         <div className="lg:col-span-2">
           <UnmatchedQuestions questions={unmatchedQuestions} />
         </div>
+      </div>
+
+      {/* Doc Requests — Supabase-backed queue from Slack flags + admin entries.
+          Sits between the source audit (above) and the proactive monitoring
+          sections (below) — that's the workflow order: "what we cite" →
+          "what we need to do" → "what we should watch." */}
+      <div className="mt-8">
+        <DocRequestsTable />
       </div>
 
       {/* Bottom sections: Stale content + Coverage gaps */}
