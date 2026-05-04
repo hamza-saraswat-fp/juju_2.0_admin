@@ -1,5 +1,16 @@
 import { useEffect, useState } from "react";
-import { ExternalLink, Hash, Save, UserPlus } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  ExternalLink,
+  Hash,
+  Loader2,
+  RotateCw,
+  Save,
+  Sparkles,
+  UserPlus,
+  XCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -12,9 +23,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { ClassificationBadge } from "./DocRequestsTable";
+import { relativeTime } from "@/lib/utils";
 import type {
   DocRequest,
   DocRequestEditableFields,
+  RecommendationCitedSource,
 } from "@/types/knowledge";
 
 interface DocRequestDetailSheetProps {
@@ -22,6 +36,7 @@ interface DocRequestDetailSheetProps {
   onOpenChange: (open: boolean) => void;
   onUpdate: (id: string, fields: DocRequestEditableFields) => Promise<void>;
   onAfterUpdate?: () => void;
+  onRegenerateRecommendation?: (id: string) => Promise<void>;
 }
 
 export function DocRequestDetailSheet({
@@ -29,6 +44,7 @@ export function DocRequestDetailSheet({
   onOpenChange,
   onUpdate,
   onAfterUpdate,
+  onRegenerateRecommendation,
 }: DocRequestDetailSheetProps) {
   const [owner, setOwner] = useState("");
   const [notes, setNotes] = useState("");
@@ -137,6 +153,14 @@ export function DocRequestDetailSheet({
                 </a>
               )}
             </div>
+          )}
+
+          {/* AI Recommendation — only meaningful for slack_flag rows. */}
+          {isSlackOrigin && (
+            <RecommendationSection
+              request={request}
+              onRegenerate={onRegenerateRecommendation}
+            />
           )}
 
           <Section label="Description">
@@ -280,4 +304,186 @@ function Section({
       <div className="mt-1">{children}</div>
     </div>
   );
+}
+
+// ─── Recommendation section ──────────────────────────────────────────
+
+function RecommendationSection({
+  request,
+  onRegenerate,
+}: {
+  request: DocRequest;
+  onRegenerate?: (id: string) => Promise<void>;
+}) {
+  const [regenerating, setRegenerating] = useState(false);
+
+  const handleRegenerate = async () => {
+    if (!onRegenerate || regenerating) return;
+    setRegenerating(true);
+    try {
+      await onRegenerate(request.id);
+      toast.success("Recommendation regenerated");
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Failed to regenerate recommendation",
+      );
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
+  const status = request.recommendationStatus;
+  const isBusy =
+    regenerating || status === "pending" || status === "generating";
+  const canRegenerate =
+    !!onRegenerate && status !== "not_applicable" && !isBusy;
+
+  return (
+    <div className="rounded-lg border border-purple-100 bg-gradient-to-br from-purple-50/40 to-transparent p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="inline-flex items-center gap-2">
+          <Sparkles className="h-3.5 w-3.5 text-purple-500" />
+          <SectionLabel>AI Recommendation</SectionLabel>
+        </div>
+        {canRegenerate && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 gap-1 text-[11px]"
+            onClick={handleRegenerate}
+          >
+            <RotateCw className="h-3 w-3" />
+            Regenerate
+          </Button>
+        )}
+      </div>
+
+      <RecommendationBody
+        request={request}
+        isBusy={isBusy}
+        onRegenerate={handleRegenerate}
+      />
+    </div>
+  );
+}
+
+function RecommendationBody({
+  request,
+  isBusy,
+  onRegenerate,
+}: {
+  request: DocRequest;
+  isBusy: boolean;
+  onRegenerate: () => void;
+}) {
+  if (isBusy) {
+    return (
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        Generating — reading cited sources and analyzing the gap…
+      </div>
+    );
+  }
+
+  if (request.recommendationStatus === "failed") {
+    return (
+      <div className="space-y-2">
+        <div className="inline-flex items-center gap-1.5 text-xs text-destructive">
+          <AlertCircle className="h-3.5 w-3.5" />
+          Generation failed
+        </div>
+        {request.recommendationError && (
+          <p className="font-mono text-[11px] text-muted-foreground break-all">
+            {request.recommendationError}
+          </p>
+        )}
+        <Button size="sm" variant="outline" className="h-7 gap-1 text-[11px]" onClick={onRegenerate}>
+          <RotateCw className="h-3 w-3" />
+          Try again
+        </Button>
+      </div>
+    );
+  }
+
+  if (
+    request.recommendationStatus !== "generated" ||
+    !request.recommendationClassification ||
+    !request.recommendationFull
+  ) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        No recommendation yet. Click Regenerate to run analysis on this
+        request.
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+        <ClassificationBadge classification={request.recommendationClassification} />
+        {request.recommendationGeneratedAt && (
+          <span>
+            Generated {relativeTime(request.recommendationGeneratedAt)}
+          </span>
+        )}
+        {request.recommendationModel && (
+          <span className="font-mono">· {request.recommendationModel}</span>
+        )}
+      </div>
+
+      <p className="whitespace-pre-wrap text-sm leading-relaxed">
+        {request.recommendationFull}
+      </p>
+
+      {request.recommendationCitedSources &&
+        request.recommendationCitedSources.length > 0 && (
+          <CitedSourcesList sources={request.recommendationCitedSources} />
+        )}
+    </>
+  );
+}
+
+function CitedSourcesList({
+  sources,
+}: {
+  sources: RecommendationCitedSource[];
+}) {
+  return (
+    <div className="border-t border-purple-100/60 pt-2">
+      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Sources analyzed
+      </p>
+      <ul className="space-y-1">
+        {sources.map((s, i) => (
+          <li key={i} className="flex items-start gap-1.5 text-[11px]">
+            <SourceFetchIcon status={s.fetch_status} />
+            <a
+              href={s.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 min-w-0 truncate text-primary-blue hover:underline"
+              title={s.url}
+            >
+              {s.title || s.url}
+            </a>
+            <span className="font-mono text-[10px] text-muted-foreground">
+              {s.source_type === "mintlify" ? "HC" : "Conf"}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function SourceFetchIcon({
+  status,
+}: {
+  status: RecommendationCitedSource["fetch_status"];
+}) {
+  if (status === "ok" || status === "from_snapshot") {
+    return <CheckCircle2 className="h-3 w-3 shrink-0 text-green-600" />;
+  }
+  return <XCircle className="h-3 w-3 shrink-0 text-red-500" />;
 }

@@ -56,6 +56,29 @@ export type DocRequestStatus =
 
 export type DocRequestOrigin = "slack_flag" | "admin_create";
 
+export type RecommendationStatus =
+  | "not_applicable"
+  | "pending"
+  | "generating"
+  | "generated"
+  | "failed"
+  | "stale";
+
+export type RecommendationClassification =
+  | "correction"
+  | "gap"
+  | "clarification";
+
+export interface RecommendationCitedSource {
+  url: string;
+  title: string;
+  source_type: "mintlify" | "confluence";
+  fetch_status: "ok" | "from_snapshot" | "failed";
+  fetch_method?: "mcp" | "http" | "snapshot";
+  fetch_error?: string;
+  body_chars?: number;
+}
+
 export interface DocRequest {
   id: string;
   projectName: string;
@@ -82,6 +105,15 @@ export interface DocRequest {
   taskStatus: DocRequestStatus;
   followUpWithRequestor: boolean;
   notes: string | null;
+
+  recommendationStatus: RecommendationStatus;
+  recommendationClassification: RecommendationClassification | null;
+  recommendationSynopsis: string | null;
+  recommendationFull: string | null;
+  recommendationCitedSources: RecommendationCitedSource[] | null;
+  recommendationGeneratedAt: string | null;
+  recommendationModel: string | null;
+  recommendationError: string | null;
 
   updatedAt: string; // ISO timestamp
 }

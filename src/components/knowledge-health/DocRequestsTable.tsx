@@ -8,6 +8,9 @@ import {
   UserPlus,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import {
   Table,
@@ -29,6 +32,7 @@ import type {
   DocRequest,
   DocRequestStatus,
   DocRequestOrigin,
+  RecommendationClassification,
 } from "@/types/knowledge";
 
 const PER_PAGE = 15;
@@ -53,8 +57,15 @@ const STATUS_BADGE: Record<DocRequestStatus, string> = {
 };
 
 export function DocRequestsTable() {
-  const { requests, isLoading, error, updateRequest, createRequest, refetch } =
-    useDocRequests();
+  const {
+    requests,
+    isLoading,
+    error,
+    updateRequest,
+    createRequest,
+    refetch,
+    regenerateRecommendation,
+  } = useDocRequests();
 
   const [sortKey, setSortKey] = useState<SortKey>("submittedAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -217,6 +228,9 @@ export function DocRequestsTable() {
               />
               <TableHead className="hidden md:table-cell">Requestor</TableHead>
               <TableHead className="hidden lg:table-cell">Asset Type</TableHead>
+              <TableHead className="hidden xl:table-cell w-[260px]">
+                AI Recommendation
+              </TableHead>
               <SortableHead
                 label="Submitted"
                 k="submittedAt"
@@ -245,7 +259,7 @@ export function DocRequestsTable() {
             {isLoading ? (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={9}
                   className="py-12 text-center text-sm text-muted-foreground"
                 >
                   Loading doc requests...
@@ -254,7 +268,7 @@ export function DocRequestsTable() {
             ) : error ? (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={9}
                   className="py-12 text-center text-sm text-destructive"
                 >
                   {error}
@@ -263,7 +277,7 @@ export function DocRequestsTable() {
             ) : paginated.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={9}
                   className="py-12 text-center text-sm text-muted-foreground"
                 >
                   {requests.length === 0
@@ -311,6 +325,9 @@ export function DocRequestsTable() {
                   </TableCell>
                   <TableCell className="hidden lg:table-cell">
                     <AssetTypePills types={r.assetTypes} />
+                  </TableCell>
+                  <TableCell className="hidden xl:table-cell w-[260px]">
+                    <RecommendationCell request={r} />
                   </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {relativeTime(r.submittedAt)}
@@ -372,12 +389,19 @@ export function DocRequestsTable() {
       />
 
       <DocRequestDetailSheet
-        request={detailRequest}
+        request={
+          // Re-resolve from `requests` so optimistic recommendation updates
+          // (regenerate flow) flow through to the drawer without closing it.
+          detailRequest
+            ? requests.find((r) => r.id === detailRequest.id) ?? detailRequest
+            : null
+        }
         onOpenChange={(open) => {
           if (!open) setDetailRequest(null);
         }}
         onUpdate={updateRequest}
         onAfterUpdate={refetch}
+        onRegenerateRecommendation={regenerateRecommendation}
       />
     </div>
   );
@@ -543,6 +567,79 @@ function shortenAssetType(t: string): string {
     .replace("Update to an Existing ", "Update ")
     .replace("New ", "New ")
     .replace(" Article", "");
+}
+
+// ─── Recommendation cell + badge ─────────────────────────────────────
+
+const CLASSIFICATION_LABEL: Record<RecommendationClassification, string> = {
+  correction: "Correction",
+  gap: "Gap",
+  clarification: "Clarification",
+};
+
+const CLASSIFICATION_BADGE: Record<RecommendationClassification, string> = {
+  correction: "bg-red-50 text-red-700 border-red-200",
+  gap: "bg-amber-50 text-amber-800 border-amber-200",
+  clarification: "bg-purple-50 text-purple-700 border-purple-200",
+};
+
+export function ClassificationBadge({
+  classification,
+  className,
+}: {
+  classification: RecommendationClassification;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider",
+        CLASSIFICATION_BADGE[classification],
+        className,
+      )}
+    >
+      {CLASSIFICATION_LABEL[classification]}
+    </span>
+  );
+}
+
+function RecommendationCell({ request: r }: { request: DocRequest }) {
+  if (r.recommendationStatus === "not_applicable") {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+  if (r.recommendationStatus === "pending" || r.recommendationStatus === "generating") {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        Generating…
+      </span>
+    );
+  }
+  if (r.recommendationStatus === "failed") {
+    return (
+      <span
+        className="inline-flex items-center gap-1.5 text-[11px] text-destructive"
+        title={r.recommendationError ?? "Generation failed"}
+      >
+        <AlertCircle className="h-3 w-3" />
+        Failed — open to retry
+      </span>
+    );
+  }
+  if (r.recommendationStatus === "generated" && r.recommendationClassification) {
+    return (
+      <div className="flex items-start gap-1.5">
+        <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-purple-500" />
+        <div className="flex-1 min-w-0 space-y-1">
+          <ClassificationBadge classification={r.recommendationClassification} />
+          <p className="text-[11px] leading-snug text-muted-foreground line-clamp-2">
+            {r.recommendationSynopsis ?? ""}
+          </p>
+        </div>
+      </div>
+    );
+  }
+  return <span className="text-xs text-muted-foreground">—</span>;
 }
 
 function FilterPills({

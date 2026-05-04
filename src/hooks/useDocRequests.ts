@@ -4,6 +4,9 @@ import type {
   DocRequest,
   DocRequestCreatePayload,
   DocRequestEditableFields,
+  RecommendationCitedSource,
+  RecommendationClassification,
+  RecommendationStatus,
 } from "@/types/knowledge";
 
 const SELECT = `
@@ -11,7 +14,10 @@ const SELECT = `
   helpful_resources, approval_needed, priority_level,
   submitted_by_slack_id, submitted_by_display_name, submitted_at, origin,
   parent_feedback_id, category, thread_permalink, verified_answer, original_question,
-  owner, task_status, follow_up_with_requestor, notes, updated_at
+  owner, task_status, follow_up_with_requestor, notes, updated_at,
+  recommendation_status, recommendation_classification, recommendation_synopsis,
+  recommendation_full, recommendation_cited_sources, recommendation_generated_at,
+  recommendation_model, recommendation_error
 `;
 
 interface DocRequestRow {
@@ -38,6 +44,14 @@ interface DocRequestRow {
   follow_up_with_requestor: boolean;
   notes: string | null;
   updated_at: string;
+  recommendation_status: RecommendationStatus;
+  recommendation_classification: RecommendationClassification | null;
+  recommendation_synopsis: string | null;
+  recommendation_full: string | null;
+  recommendation_cited_sources: RecommendationCitedSource[] | null;
+  recommendation_generated_at: string | null;
+  recommendation_model: string | null;
+  recommendation_error: string | null;
 }
 
 function rowToRequest(r: DocRequestRow): DocRequest {
@@ -64,6 +78,14 @@ function rowToRequest(r: DocRequestRow): DocRequest {
     taskStatus: r.task_status,
     followUpWithRequestor: r.follow_up_with_requestor,
     notes: r.notes,
+    recommendationStatus: r.recommendation_status,
+    recommendationClassification: r.recommendation_classification,
+    recommendationSynopsis: r.recommendation_synopsis,
+    recommendationFull: r.recommendation_full,
+    recommendationCitedSources: r.recommendation_cited_sources,
+    recommendationGeneratedAt: r.recommendation_generated_at,
+    recommendationModel: r.recommendation_model,
+    recommendationError: r.recommendation_error,
     updatedAt: r.updated_at,
   };
 }
@@ -183,6 +205,60 @@ export function useDocRequests() {
     [fetchRequests],
   );
 
+  // Manually re-run the AI recommendation generator for a single row.
+  // Hits the edge function synchronously with force:true so the user gets
+  // immediate feedback without waiting for the next cron tick. We patch
+  // local state from the response — no full refetch.
+  const regenerateRecommendation = useCallback(
+    async (id: string) => {
+      // Optimistically flip the UI to "generating" so the badge updates
+      // immediately, even before the edge function responds.
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? { ...r, recommendationStatus: "generating", recommendationError: null }
+            : r,
+        ),
+      );
+
+      const { data, error: err } = await supabase.functions.invoke(
+        "generate-doc-recommendation",
+        { body: { id, force: true } },
+      );
+
+      if (err) {
+        console.error("[useDocRequests] regenerate failed:", err);
+        await fetchRequests();
+        throw err;
+      }
+
+      // Edge function returns the new recommendation in the response body —
+      // patch local state directly so the drawer updates without a refetch.
+      if (data?.status === "generated") {
+        setRequests((prev) =>
+          prev.map((r) =>
+            r.id === id
+              ? {
+                  ...r,
+                  recommendationStatus: "generated",
+                  recommendationClassification: data.classification ?? null,
+                  recommendationSynopsis: data.synopsis ?? null,
+                  recommendationFull: data.full_reasoning ?? null,
+                  recommendationCitedSources: data.cited_sources ?? null,
+                  recommendationGeneratedAt: new Date().toISOString(),
+                  recommendationError: null,
+                }
+              : r,
+          ),
+        );
+      } else {
+        // failed or unexpected shape — refetch so the row reflects DB truth.
+        await fetchRequests();
+      }
+    },
+    [fetchRequests],
+  );
+
   return {
     requests,
     isLoading,
@@ -190,5 +266,6 @@ export function useDocRequests() {
     refetch: fetchRequests,
     updateRequest,
     createRequest,
+    regenerateRecommendation,
   };
 }
