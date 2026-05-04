@@ -14,6 +14,7 @@ import {
   type EscalationFilter,
   type QuestionFilters,
   type RatingFilter,
+  type TimeRange,
   type VerifiedFilter,
 } from "@/lib/questionFilters";
 import { cn } from "@/lib/utils";
@@ -52,11 +53,10 @@ export function FilterBar({
   const subCategoryOptions =
     filters.category === "ALL" ? [] : SUB_CATEGORIES[filters.category];
 
-  // Time range is no longer surfaced in the filter bar (each card owns its
-  // own time toggle), so we don't include it in active-state or reset.
   const isAnyFilterActive =
     filters.category !== DEFAULT_FILTERS.category ||
     filters.subCategory !== DEFAULT_FILTERS.subCategory ||
+    filters.timeRange !== DEFAULT_FILTERS.timeRange ||
     filters.rating !== DEFAULT_FILTERS.rating ||
     filters.escalation !== DEFAULT_FILTERS.escalation ||
     filters.hasVerifiedAnswer !== DEFAULT_FILTERS.hasVerifiedAnswer ||
@@ -66,6 +66,7 @@ export function FilterBar({
     setLocalSearch("");
     onFilterChange("category", DEFAULT_FILTERS.category);
     onFilterChange("subCategory", DEFAULT_FILTERS.subCategory);
+    onFilterChange("timeRange", DEFAULT_FILTERS.timeRange);
     onFilterChange("rating", DEFAULT_FILTERS.rating);
     onFilterChange("escalation", DEFAULT_FILTERS.escalation);
     onFilterChange("hasVerifiedAnswer", DEFAULT_FILTERS.hasVerifiedAnswer);
@@ -161,9 +162,20 @@ export function FilterBar({
           onChange={(v) => onFilterChange("hasVerifiedAnswer", v)}
         />
 
-        {/* Time dropdown removed in Phase 4 — each card now owns its own
-            time-range toggle. `filters.timeRange` is still kept in the
-            QuestionFilters type for the underlying table search logic. */}
+        <FilterDropdown
+          label="Time"
+          value={filters.timeRange}
+          defaultValue={DEFAULT_FILTERS.timeRange}
+          options={
+            [
+              { value: "24h", label: "Last 24 hours", shortLabel: "24h" },
+              { value: "7d", label: "Last 7 days", shortLabel: "7d" },
+              { value: "30d", label: "Last 30 days", shortLabel: "30d" },
+              { value: "all", label: "All time", shortLabel: "All" },
+            ] as DropdownOption<TimeRange>[]
+          }
+          onChange={(v) => onFilterChange("timeRange", v)}
+        />
 
         {isAnyFilterActive && (
           <Button
