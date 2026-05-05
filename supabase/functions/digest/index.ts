@@ -235,10 +235,21 @@ function pickScheduledKind(cfg: AppConfig): Kind | null {
 async function fetchDailyVars(
   supabase: SupabaseClient,
 ): Promise<Record<string, string>> {
+  // The daily digest copy says "Juju yesterday", so we want yesterday's
+  // full Chicago calendar day — not "today (Chicago) so far", which is
+  // what '24h' means inside these RPCs.
+  //
+  // Hero RPC: read the *_prior fields. For p_time_range = '24h' the
+  //   "prior" period is exactly yesterday's full day, so no RPC change
+  //   is needed here — we just point at avg_messages_prior /
+  //   auto_resolve_prior / unique_users_prior.
+  // Phase 2 RPC: pass p_time_range = 'yesterday', a new branch added
+  //   in migration 0014. It shifts today_chi_utc back by one day so
+  //   top_categories reflects yesterday's window.
   const [hero, phase2] = await Promise.all([
     supabase.rpc("get_question_log_metrics", { p_time_range: "24h" }),
     supabase.rpc("get_question_log_phase2", {
-      p_time_range: "24h",
+      p_time_range: "yesterday",
       p_category: "ALL",
       p_escalation: "ALL",
       p_verified: "ALL",
@@ -247,9 +258,9 @@ async function fetchDailyVars(
   if (hero.error) throw new Error(`hero RPC failed: ${hero.error.message}`);
   if (phase2.error) throw new Error(`phase2 RPC failed: ${phase2.error.message}`);
 
-  const total = Math.round(hero.data?.avg_messages_window ?? 0);
-  const autoResolvePct = formatPct(hero.data?.auto_resolve_window ?? null);
-  const uniqueUsers = hero.data?.unique_users_window ?? 0;
+  const total = Math.round(hero.data?.avg_messages_prior ?? 0);
+  const autoResolvePct = formatPct(hero.data?.auto_resolve_prior ?? null);
+  const uniqueUsers = hero.data?.unique_users_prior ?? 0;
   const topCat = phase2.data?.top_categories?.[0];
 
   return {
