@@ -212,6 +212,11 @@ function pickScheduledKind(cfg: AppConfig): Kind | null {
   };
   const dow = dowMap[weekday] ?? 0;
   const isWeekday = dow >= 1 && dow <= 5;
+  // Daily recap reads "Juju yesterday", so it only fires on days where
+  // "yesterday" is itself a weekday with real traffic — Tue-Fri. Monday is
+  // covered by the weekly digest; Sat/Sun are blocked by the
+  // daily_send_weekdays_only toggle one rung below this.
+  const isDailyDay = dow >= 2 && dow <= 5;
 
   // Weekly wins if both land on the same hour (avoids double-posting).
   if (
@@ -224,7 +229,8 @@ function pickScheduledKind(cfg: AppConfig): Kind | null {
   if (
     cfg.daily_digest_enabled &&
     hour === cfg.daily_send_hour_chicago &&
-    (!cfg.daily_send_weekdays_only || isWeekday)
+    (!cfg.daily_send_weekdays_only || isWeekday) &&
+    isDailyDay
   ) {
     return "daily";
   }

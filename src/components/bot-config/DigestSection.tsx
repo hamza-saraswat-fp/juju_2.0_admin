@@ -186,11 +186,7 @@ export function DigestSection() {
         {/* Daily row */}
         <DigestRow
           label="Daily digest"
-          subtitle={
-            config.daily_send_weekdays_only
-              ? `Posted weekdays at ${formatHourCentral(config.daily_send_hour_chicago)}, summarizing yesterday.`
-              : `Posted daily at ${formatHourCentral(config.daily_send_hour_chicago)}, summarizing yesterday.`
-          }
+          subtitle={`Posted Tue–Fri at ${formatHourCentral(config.daily_send_hour_chicago)}, summarizing yesterday.`}
           enabled={config.daily_digest_enabled}
           onToggle={(v) => handleToggle("daily", v)}
           lastSent={lastSent("daily")}
